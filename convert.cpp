@@ -196,6 +196,9 @@ bool printResults(const std::string& filename, const Results& results)
     return true;
 }
 
+constexpr double bad_E0 = 250;
+constexpr double bad_s1 = 0.65;
+
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1, bool & approx_good)
 {
     double s1=results[0].sigma*results[0].epsilon;
@@ -249,6 +252,8 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
     sig_1=E_0*em/(1-E_0*(e1-e0)/ds);
 //    std::cout<<"Sigma_1="<<sig_1<<std::endl;
 //
+    if (E_0 > bad_E0 || s1 < bad_s1)
+	return false;
     while (results[i_s].cycle == 0)
 	i_s++;
     double eps2 = results[i_s].epsilon - dEps;
