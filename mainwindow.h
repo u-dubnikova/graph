@@ -39,8 +39,9 @@ private:
     {
 	QString FileName;
 	bool valid;
-    bool approx_good;
+	bool approx_good;
 	double E,S;
+	std::vector<PreparedResult> results;
     };
     std::multimap<double,ReportEntry> report;
     std::set<double> temps;

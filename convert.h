@@ -8,5 +8,6 @@
 
 void convertFile(const std::string& inputFileName, const std::string& outputFileName);
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1,bool & approx_good);
+double findSigma2(std::vector<PreparedResult> & results, double dEps, double E);
 
 #endif // CONVERT_H

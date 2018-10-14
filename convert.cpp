@@ -199,6 +199,16 @@ bool printResults(const std::string& filename, const Results& results)
 constexpr double bad_E0 = 250;
 constexpr double bad_s1 = 0.65;
 
+static double get_sigma(const PreparedResult & p0, const PreparedResult &p1, double E, double dEps)
+{
+    double e1=p1.epsilon, e0=p0.epsilon;
+    double s1=p1.sigma, s0=p0.sigma;
+    double ds=s1-s0;
+    double de=e1-e0;
+    double E1=ds/de;
+    return (s0-E1*(e0-dEps))/(1-E1/E);
+}
+
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1, bool & approx_good)
 {
     double s1=results[0].sigma*results[0].epsilon;
@@ -236,23 +246,18 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
 	    break;
 	}
     }
-//    std::cout<<"SIGMA_0="<<sig_0<<",EPSILON_0="<<eps_0<<std::endl;
-//    std::cout<<"E_0="<<E_0<<std::endl;
+   std::cout<<"SIGMA_0="<<sig_0<<",EPSILON_0="<<eps_0<<std::endl;
+   std::cout<<"E_0="<<E_0<<std::endl;
     size_t i_s;
 
     for (i_s=1;i_s<results.size() && results[i_s].cycle == 0 && results[i_s].sigma>= E_0*(results[i_s].epsilon-dEps);i_s++) 
 	;
     if (i_s>=results.size() || results[i_s].cycle != 0)
 	return false;
-    double e1=results[i_s].epsilon,e0=results[i_s-1].epsilon;
-    s1=results[i_s].sigma;
-    double s0=results[i_s-1].epsilon;
-    double ds=s1-s0;
-    double em=(e0*s1-e1*s0)/ds-dEps;
-    sig_1=E_0*em/(1-E_0*(e1-e0)/ds);
-//    std::cout<<"Sigma_1="<<sig_1<<std::endl;
-//
-    if (E_0 > bad_E0 || s1 < bad_s1)
+    sig_1 = get_sigma(results[i_s-1],results[i_s],E_0,dEps);
+    std::cout<<"Sigma_1="<<sig_1<<std::endl;
+
+    if (E_0 > bad_E0 || sig_1 < bad_s1)
 	return false;
     while (results[i_s].cycle == 0)
 	i_s++;
@@ -264,6 +269,16 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
 	approx_good = true;
     	
     return true;
+}
+
+double findSigma2(std::vector<PreparedResult> & results, double dEps, double E)
+{
+    size_t i_s;
+    for (i_s=0;i_s<results.size() && results[i_s].cycle == 0 && results[i_s].sigma>= E*(results[i_s].epsilon-dEps);i_s++) 
+	;
+//    if (i_s == results.size())
+//	std::cout<<"NO INTERSECTION!!!!"<<std::endl;
+    return get_sigma(results[i_s-1],results[i_s],E,dEps);    	
 }
 
 void convertFile(const std::string& inputFileName, const std::string& outputFileName)

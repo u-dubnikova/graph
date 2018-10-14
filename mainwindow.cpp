@@ -185,12 +185,11 @@ void MainWindow::setTemperature() {
                                                                            "ALV (*.alv);;All Files (*)");
     for (QString & fname: fileNames)
     {
-        std::vector<PreparedResult> results;
-        if (!loadPrepared(results,fname))
-            continue;
 	ReportEntry re;
+        if (!loadPrepared(re.results,fname))
+            continue;
 	re.FileName = fname;
-    re.valid=findElas(results,dEpsilon,re.E,re.S,re.approx_good);
+	re.valid=findElas(re.results,dEpsilon,re.E,re.S,re.approx_good);
 	report.emplace(temp,re);
     }
     temps.emplace(temp);
@@ -231,26 +230,42 @@ void MainWindow::saveReport() {
         out<<"Temperature: "<<temp<<"\n";
         auto range = report.equal_range(temp);
 	int count=0;
-	double sE=0.,sS=0.;
+	double sE=0.,sS=0.,s2=0.,E2;
         for (auto it=range.first;it!=range.second;it++)
         {
 	    ReportEntry & re=it->second;
 	    out<<re.FileName<<"::";
-	    if (re.valid)
+	    if (!re.valid)
 	    {
-		sE+=re.E;
-		sS+=re.S;
-		count++;
-		out<<re.E<<"\t"<<re.S<<"\n";
-		if (re.approx_good)
-		    out<<"Approximation is good\n";
-		else
-		    out<<"Approximation is not sufficient, try to increase delta\n";
-	    }
-	    else
 		out<<"not found\n";
+		continue;
+	    }
+	    sE+=re.E;
+	    sS+=re.S;
+	    count++;
+	    out<<re.E<<"\t"<<re.S<<"\n";
+	    if (re.approx_good)
+		    out<<"Approximation is good\n";
+	    else
+		    out<<"Approximation is not sufficient, try to increase delta\n";
         }
-	if (count)
-	    out<<"Average:: "<<sE/count<<"\t"<<sS/count<<"\n";
+	sE/=count;
+	sS/=count;
+	if (!count)
+	    continue;
+	out<<"Average:: "<<sE<<"\t"<<sS<<"\n";
+	count = 0;
+        for (auto it=range.first;it!=range.second;it++)
+        {
+	    ReportEntry & re=it->second;
+	    if (!re.valid)
+		continue;
+	    s2+=findSigma2(re.results, dEpsilon, sE);
+	    count++;
+	}
+	s2/=count;
+	out<<"Refined s:"<<s2<<'\n';
+	E2 = 1./(1./sE+dEpsilon/s2);
+	out<<"Refined E:"<<E2<<'\n';
     }
 }
