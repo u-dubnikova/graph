@@ -289,12 +289,8 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
 	S2+=ds*ds;
     }
     S2/=(n-2);
-    double Sk2=S2/(n*(aEps2-aEps*aEps)); // variance estimate for k
-    double t=fabs(k)/sqrt(Sk2); // Student test abs: |t|=|k/sqrt(Sk2)|
-    constexpr double tcr = 0.0635; // Student 2 sided critical value for a 5% strip around 0
-    if (t<tcr)
-	return false; // no plasticity, the sample is bad
-
+    if (S2 < 0.0025*aSig*aSig ) // sqrt(S2)/|aSig| < 5%
+	return false;
     while (results[i_s].cycle == 0)
 	i_s++;
     double eps2 = results[i_s].epsilon - dEps;
