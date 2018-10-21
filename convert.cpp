@@ -256,9 +256,45 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
 	return false;
     sig_1 = get_sigma(results[i_s-1],results[i_s],E_0,dEps);
     std::cout<<"Sigma_1="<<sig_1<<std::endl;
+/* 
+ * regression: s=ke+b+u
+ * k, b - obvious
+ * aEps ... averages
+*/
+    size_t n=0;
+    double aSig=0,aEps=0,aSigEps=0,aEps2=0;
+    for (n=0;n<results.size() && results[n].cycle == 0;n++)
+    {
+	double s=results[n].sigma,e=results[n].epsilon;
+	aEps+=e;
+	aSig+=s;
+	aSigEps+=s*e;
+	aEps2+=e*e;
+    }
+    aEps/=n;
+    aSig/=n;
+    aSigEps/=n;
+    aEps2/=n;
+    double k=(aSigEps-aSig*aEps)/(aEps2-aEps*aEps);
+    double b=aSig-k*aEps,S2=0;
+ /* 
+  * Find variance estimate S2 for the regression
+  * S2=\sum (s_i-ke_i-b)^2/(n-2)
+*/
+    for (size_t i=0;i<n;i++)
+    {
+	double s=results[i].sigma,e=results[i].epsilon;
+	double as=k*e+b;
+	double ds=s-as;
+	S2+=ds*ds;
+    }
+    S2/=(n-2);
+    double Sk2=S2/(n*(aEps2-aEps*aEps)); // variance estimate for k
+    double t=fabs(k)/sqrt(Sk2); // Student test abs: |t|=|k/sqrt(Sk2)|
+    constexpr double tcr = 0.0635; // Student 2 sided critical value for a 5% strip around 0
+    if (t<tcr)
+	return false; // no plasticity, the sample is bad
 
-    if (E_0 > bad_E0 || sig_1 < bad_s1)
-	return false;
     while (results[i_s].cycle == 0)
 	i_s++;
     double eps2 = results[i_s].epsilon - dEps;
