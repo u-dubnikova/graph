@@ -8,6 +8,10 @@ struct PreparedResult
     int cycle = 0;
     double sigma = 0.0;
     double epsilon = 0.0;
+    PreparedResult(int cycle_=0,double sigma_=0, double epsilon_=0):
+	cycle(cycle_),sigma(sigma_),epsilon(epsilon_) 
+    {
+    }
 
     friend QTextStream& operator>>(QTextStream& is, PreparedResult& result)
     {

@@ -6,6 +6,8 @@
 #include <QMessageBox>
 #include <iostream>
 #include <sstream>
+#include <limits>
+#include <cmath>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -267,5 +269,58 @@ void MainWindow::saveReport() {
 	out<<"Refined s:"<<s2<<'\n';
 	E2 = 1./(1./sE+dEpsilon/s2);
 	out<<"Refined E:"<<E2<<'\n';
+	std::vector<std::vector<PreparedResult> > convs;
+	double epmin=100000;
+	for (auto it=range.first;it!=range.second;it++)
+	{
+	    ReportEntry & re = it->second;
+	    if (!re.valid)
+		continue;
+	    std::vector<PreparedResult> cur;
+	    double epcycle = 0;
+	    for (const auto & res: re.results)
+	    {
+		if (res.cycle != 0 )
+		    break;
+		double epcur = res.epsilon - res.sigma/sE;
+		if (epcur > epcycle)
+		     epcycle = epcur;
+		cur.push_back(PreparedResult(0,res.sigma, epcur));
+	    }
+	    convs.push_back(cur);
+	    if (epcycle < epmin)
+		epmin = epcycle;
+	}
+	for (auto & cv: convs)
+	{
+	    for (size_t i=0;i<cv.size();i++)
+		if (cv[i].epsilon >= epmin)
+		{
+		    cv.resize(i+1);
+		    break;
+		}
+	}
+	std::vector<size_t> positions(convs.size());
+	std::vector<PreparedResult> avResults;
+	for (int i=0;i<=10;i++)
+	{
+	    double cur_eps = dEpsilon + i*(epmin-dEpsilon)/10;
+	    double av_sig = 0;
+	    for (size_t j=0;j<convs.size();j++)
+	    {
+		auto & cv = convs[j];
+		size_t k;
+		for (k=positions[j];k<cv.size() && cv[k].epsilon < cur_eps;k++) ;
+		av_sig+=cv[k-1].sigma+(cv[k].sigma - cv[k-1].sigma)/(cv[k].epsilon - cv[k-1].epsilon) * (cur_eps - cv[k-1].epsilon);	
+		if (k!=0)
+		    positions[j]=k-1;
+	    }
+	    av_sig/=convs.size();
+	    avResults.push_back(PreparedResult(0,av_sig, cur_eps+av_sig/sE));
+	}
+	out<<"Average curve:"<<'\n';
+	for (auto & v: avResults)
+	    out<<v.sigma<<'\t'<<v.epsilon<<'\n';
+
     }
 }
