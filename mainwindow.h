@@ -29,6 +29,7 @@ private slots:
     void setDelta();
 
 private:
+    void paintGraph(std::vector<PreparedResult> & data, const QString& name, QColor color);
     void paintGraph(const QString& filename);
     bool loadPrepared(std::vector<PreparedResult> & results,const QString &filename);
 

@@ -21,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent) :
     plot->xAxis->setRange(-1, 1);
     plot->yAxis->setRange(-1, 1);
     plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    plot->setAutoAddPlottableToLegend(true);
+    plot->legend->setVisible(true);
 
     connect(ui->actionOpen, SIGNAL(triggered()), this, SLOT(openTriggered()));
     connect(ui->actionConvert, SIGNAL(triggered()), this, SLOT(convertTriggered()));
@@ -73,27 +75,30 @@ bool MainWindow::loadPrepared(std::vector<PreparedResult> & results,const QStrin
     return true;
 }
 
+void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& name, QColor color)
+{
+    QVector<double> x, y;
+    for (PreparedResult & result: data)
+    {
+        x.append(result.epsilon);
+        y.append(result.sigma);
+    }
+    auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
+    graph->setData(x, y);
+    graph->setName(name);
+    graph->setPen(QPen(color));
+}
+
 void MainWindow::paintGraph(const QString& filename)
 {
     plot->clearPlottables();
-
-    QVector<double> x, y;
     std::vector<PreparedResult> results;
     if (!loadPrepared(results,filename))
     {
         plot->replot();
         return;
     }
-    for (PreparedResult & result: results)
-    {
-        std::cout<<result.epsilon<<" "<<result.sigma<<std::endl;
-        x.append(result.epsilon);
-        y.append(result.sigma);
-    }
-
-    auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
-    graph->setData(x, y);
-
+    paintGraph(results,filename, Qt::blue);
     plot->rescaleAxes();
     plot->replot();
 }
@@ -215,6 +220,19 @@ void MainWindow::setDelta()
     dEpsilon = delta/100;
 }
 
+static QColor getMyColor(int nres)
+{
+    switch(nres)
+    {
+	case 0: return QColor(0,0,0);
+	case 1: return QColor(255,0,0);
+	case 2: return QColor(0,0,255);
+	case 3: return QColor(0,255,0);
+	default:
+	    return QColor(nres*5,100+nres*2,255-nres*3);
+    }
+}
+
 void MainWindow::saveReport() {
     auto fileName = QFileDialog::getSaveFileName(this,
                                                  "Save Report", "",
@@ -227,6 +245,8 @@ void MainWindow::saveReport() {
     }
     QTextStream out(&file);
     out<<"Delta:"<<dEpsilon<<"\n";
+    int ntemp=0;
+    plot->clearPlottables();
     for (double temp: temps)
     {
         out<<"Temperature: "<<temp<<"\n";
@@ -302,6 +322,7 @@ void MainWindow::saveReport() {
 	}
 	std::vector<size_t> positions(convs.size());
 	std::vector<PreparedResult> avResults;
+	avResults.push_back(PreparedResult(0,0,0));
 	for (int i=0;i<=10;i++)
 	{
 	    double cur_eps = dEpsilon + i*(epmin-dEpsilon)/10;
@@ -319,8 +340,11 @@ void MainWindow::saveReport() {
 	    avResults.push_back(PreparedResult(0,av_sig, cur_eps+av_sig/sE));
 	}
 	out<<"Average curve:"<<'\n';
-	for (auto & v: avResults)
-	    out<<v.sigma<<'\t'<<v.epsilon<<'\n';
-
+	for (size_t i=1;i<avResults.size();i++)
+	    out<<avResults[i].sigma<<'\t'<<avResults[i].epsilon<<'\n';
+	paintGraph(avResults,"Температура: "+QString::number(temp),getMyColor   (ntemp)); 
+	ntemp++;
     }
+    plot->rescaleAxes();
+    plot->replot();
 }
