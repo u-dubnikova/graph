@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->action_temp, SIGNAL(triggered()), this, SLOT(setTemperature()));
     connect(ui->action_report, SIGNAL(triggered()), this, SLOT(saveReport()));
     connect(ui->action_delta, SIGNAL(triggered()), this, SLOT(setDelta()));
+    connect(ui->action_clear, SIGNAL(triggered()), this, SLOT(doClear()));
     dEpsilon = 0.0002;
 
 }
@@ -168,6 +169,13 @@ void MainWindow::saveTriggered()
         QMessageBox::information(this, "Error",
             "Unable to save graph image");
     }
+}
+
+void MainWindow::doClear()
+{
+    dEpsilon = 0.0002;
+    temps.clear();
+    report.clear();
 }
 
 void MainWindow::setTemperature() {

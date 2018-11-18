@@ -27,6 +27,7 @@ private slots:
     void setTemperature();
     void saveReport();
     void setDelta();
+    void doClear();
 
 private:
     void paintGraph(std::vector<PreparedResult> & data, const QString& name, QColor color);

@@ -56,6 +56,7 @@
     <addaction name="action_delta"/>
     <addaction name="action_temp"/>
     <addaction name="action_report"/>
+    <addaction name="action_clear"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -88,6 +89,11 @@
   <action name="action_delta">
    <property name="text">
     <string>&amp;Задать дельту</string>
+   </property>
+  </action>
+  <action name="action_clear">
+   <property name="text">
+    <string>О&amp;чистить</string>
    </property>
   </action>
  </widget>
