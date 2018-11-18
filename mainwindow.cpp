@@ -290,7 +290,7 @@ void MainWindow::saveReport() {
 	E2 = 1./(1./sE+dEpsilon/s2);
 	out<<"Refined E:"<<E2<<'\n';
 	std::vector<std::vector<PreparedResult> > convs;
-	double epmin=100000;
+	double epmax=0;
 	for (auto it=range.first;it!=range.second;it++)
 	{
 	    ReportEntry & re = it->second;
@@ -308,24 +308,15 @@ void MainWindow::saveReport() {
 		cur.push_back(PreparedResult(0,res.sigma, epcur));
 	    }
 	    convs.push_back(cur);
-	    if (epcycle < epmin)
-		epmin = epcycle;
-	}
-	for (auto & cv: convs)
-	{
-	    for (size_t i=0;i<cv.size();i++)
-		if (cv[i].epsilon >= epmin)
-		{
-		    cv.resize(i+1);
-		    break;
-		}
+	    if (epcycle > epmax)
+		epmax = epcycle;
 	}
 	std::vector<size_t> positions(convs.size());
 	std::vector<PreparedResult> avResults;
 	avResults.push_back(PreparedResult(0,0,0));
 	for (int i=0;i<=10;i++)
 	{
-	    double cur_eps = dEpsilon + i*(epmin-dEpsilon)/10;
+	    double cur_eps = dEpsilon + i*(epmax-dEpsilon)/10;
 	    double av_sig = 0;
 	    for (size_t j=0;j<convs.size();j++)
 	    {
