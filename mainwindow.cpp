@@ -241,6 +241,47 @@ static QColor getMyColor(int nres)
     }
 }
 
+class BEZ11
+{
+    static constexpr int n = 11;
+    static const double bincoeff[n];
+public:   
+    struct point
+    {
+	double x,y;
+    } points[n];
+    BEZ11(std::vector<PreparedResult> & avRes)
+    {
+	for (int i=1;i<=11;i++)
+	{
+	    points[i-1].x=avRes[i].epsilon;
+	    points[i-1].y=avRes[i].sigma;
+	}
+	std::cerr<<"("<<points[0].x<<";"<<points[0].y<<")"<<std::endl;
+	std::cerr<<"("<<points[n-1].x<<";"<<points[n-1].y<<")"<<std::endl;
+    }
+    point operator()(double t) const
+    {
+	point res={0,0};
+	std::cerr<<"t="<<t<<std::endl;
+	double tt=pow(1-t,n-1);
+	if (t < 0.00001)
+	    return points[0];
+	if (t > 1-0.00001)
+	    return points[n-1];
+	for (int i=0;i<=n-1;i++)
+	{
+	    res.x+=tt*bincoeff[i]*points[i].x;
+	    res.y+=tt*bincoeff[i]*points[i].y;
+	    tt*=t/(1-t);
+	}
+	std::cerr<<"("<<res.x<<";"<<res.y<<")"<<std::endl;
+	return res;
+    }
+};
+
+const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
+
 void MainWindow::saveReport() {
     auto fileName = QFileDialog::getSaveFileName(this,
                                                  "Save Report", "",
@@ -346,7 +387,16 @@ void MainWindow::saveReport() {
 	out<<"Average curve:"<<'\n';
 	for (size_t i=1;i<avResults.size();i++)
 	    out<<avResults[i].sigma<<'\t'<<avResults[i].epsilon<<'\n';
-	paintGraph(avResults,"Температура: "+QString::number(temp),getMyColor   (ntemp)); 
+	std::vector<PreparedResult> paintRes(10*10+1);
+	paintRes.push_back(PreparedResult(0,0,0));
+	BEZ11 b11(avResults);
+
+	for (int i=0;i<=100;i++)
+	{
+	    BEZ11::point p=b11((double)i/100);
+	    paintRes.push_back(PreparedResult(0,p.y,p.x));
+	}
+	paintGraph(paintRes,"Температура: "+QString::number(temp),getMyColor   (ntemp)); 
 	ntemp++;
     }
     plot->rescaleAxes();
