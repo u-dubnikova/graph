@@ -326,16 +326,21 @@ void MainWindow::saveReport() {
 	{
 	    double cur_eps = dEpsilon + i*(epmax-dEpsilon)/10;
 	    double av_sig = 0;
+	    size_t n = 0;
 	    for (size_t j=0;j<convs.size();j++)
 	    {
 		auto & cv = convs[j];
 		size_t k;
 		for (k=positions[j];k<cv.size() && cv[k].epsilon < cur_eps;k++) ;
+		if (k == cv.size() || cv[k].epsilon < cur_eps)
+		    continue;
 		av_sig+=cv[k-1].sigma+(cv[k].sigma - cv[k-1].sigma)/(cv[k].epsilon - cv[k-1].epsilon) * (cur_eps - cv[k-1].epsilon);	
+//		std::cerr<<"sg("<<k<<","<<positions[j]<<","<<cv.size()<<"):"<<cv[k-1].sigma<<":"<<cv[k].sigma<<"="<<cv[k-1].sigma+(cv[k].sigma - cv[k-1].sigma)/(cv[k].epsilon - cv[k-1].epsilon) * (cur_eps - cv[k-1].epsilon)<<std::endl;
 		if (k!=0)
 		    positions[j]=k-1;
+		n++;    
 	    }
-	    av_sig/=convs.size();
+	    av_sig/=n;
 	    avResults.push_back(PreparedResult(0,av_sig, cur_eps+av_sig/sE));
 	}
 	out<<"Average curve:"<<'\n';
