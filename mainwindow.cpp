@@ -176,6 +176,8 @@ void MainWindow::doClear()
     dEpsilon = 0.0002;
     temps.clear();
     report.clear();
+    plot->clearPlottables();
+    plot->replot();
 }
 
 void MainWindow::setTemperature() {
@@ -243,7 +245,7 @@ static QColor getMyColor(int nres)
 
 class BEZ11
 {
-    static constexpr int n = 11;
+    static constexpr int n = 12;
     static const double bincoeff[n];
 public:   
     struct point
@@ -252,18 +254,15 @@ public:
     } points[n];
     BEZ11(std::vector<PreparedResult> & avRes)
     {
-	for (int i=1;i<=11;i++)
+	for (int i=0;i<n;i++)
 	{
-	    points[i-1].x=avRes[i].epsilon;
-	    points[i-1].y=avRes[i].sigma;
+	    points[i].x=avRes[i].epsilon;
+	    points[i].y=avRes[i].sigma;
 	}
-	std::cerr<<"("<<points[0].x<<";"<<points[0].y<<")"<<std::endl;
-	std::cerr<<"("<<points[n-1].x<<";"<<points[n-1].y<<")"<<std::endl;
     }
     point operator()(double t) const
     {
 	point res={0,0};
-	std::cerr<<"t="<<t<<std::endl;
 	double tt=pow(1-t,n-1);
 	if (t < 0.00001)
 	    return points[0];
@@ -275,12 +274,12 @@ public:
 	    res.y+=tt*bincoeff[i]*points[i].y;
 	    tt*=t/(1-t);
 	}
-	std::cerr<<"("<<res.x<<";"<<res.y<<")"<<std::endl;
 	return res;
     }
 };
 
-const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
+//const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
+const double BEZ11::bincoeff[n]={1,11,55,165,330,462,462,330,165,55,11,1};
 
 void MainWindow::saveReport() {
     auto fileName = QFileDialog::getSaveFileName(this,
@@ -365,7 +364,7 @@ void MainWindow::saveReport() {
 	avResults.push_back(PreparedResult(0,0,0));
 	for (int i=0;i<=10;i++)
 	{
-	    double cur_eps = dEpsilon + i*(epmax-dEpsilon)/10;
+	    double cur_eps = dEpsilon + i*(epmax*0.999-dEpsilon)/10;
 	    double av_sig = 0;
 	    size_t n = 0;
 	    for (size_t j=0;j<convs.size();j++)
@@ -376,7 +375,6 @@ void MainWindow::saveReport() {
 		if (k == cv.size() || cv[k].epsilon < cur_eps)
 		    continue;
 		av_sig+=cv[k-1].sigma+(cv[k].sigma - cv[k-1].sigma)/(cv[k].epsilon - cv[k-1].epsilon) * (cur_eps - cv[k-1].epsilon);	
-//		std::cerr<<"sg("<<k<<","<<positions[j]<<","<<cv.size()<<"):"<<cv[k-1].sigma<<":"<<cv[k].sigma<<"="<<cv[k-1].sigma+(cv[k].sigma - cv[k-1].sigma)/(cv[k].epsilon - cv[k-1].epsilon) * (cur_eps - cv[k-1].epsilon)<<std::endl;
 		if (k!=0)
 		    positions[j]=k-1;
 		n++;    
