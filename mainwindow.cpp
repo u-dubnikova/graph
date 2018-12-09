@@ -43,7 +43,7 @@ void MainWindow::openTriggered()
 {
     auto fileName = QFileDialog::getOpenFileName(this,
                                                  "Open file with results", "",
-                                                 "ALV (*.alv);;All Files (*)");
+                                                 "ALV (*.alv);;Cut ALV(*.acv);;All Files (*)");
     if (fileName.isEmpty())
            return;
 
@@ -98,7 +98,10 @@ void MainWindow::paintGraph(const QString& filename)
         plot->replot();
         return;
     }
-    paintGraph(results,filename, Qt::blue);
+    QColor c=Qt::blue;
+    if (filename.mid(filename.size()-4) == ".acv")
+	c = Qt::red;
+    paintGraph(results,filename, c);
     plot->rescaleAxes();
     plot->replot();
 }
@@ -320,7 +323,7 @@ void MainWindow::saveReport() {
 	    convs.push_back(cur);
 	    if (epcycle > epmax)
 		epmax = epcycle;
-	    QString out_name=re.FileName.mid(0,re.FileName.size()-4)+"_cut.alv";
+	    QString out_name=re.FileName.mid(0,re.FileName.size()-4)+".acv";
 	    SaveCutResults(out_name.toStdString(),re.results,E2,dEpsilon);
 
 	}
