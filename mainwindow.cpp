@@ -7,7 +7,6 @@
 #include <iostream>
 #include <sstream>
 #include <limits>
-#include <cmath>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -243,43 +242,6 @@ static QColor getMyColor(int nres)
     }
 }
 
-class BEZ11
-{
-    static constexpr int n = 12;
-    static const double bincoeff[n];
-public:   
-    struct point
-    {
-	double x,y;
-    } points[n];
-    BEZ11(std::vector<PreparedResult> & avRes)
-    {
-	for (int i=0;i<n;i++)
-	{
-	    points[i].x=avRes[i].epsilon;
-	    points[i].y=avRes[i].sigma;
-	}
-    }
-    point operator()(double t) const
-    {
-	point res={0,0};
-	double tt=pow(1-t,n-1);
-	if (t < 0.00001)
-	    return points[0];
-	if (t > 1-0.00001)
-	    return points[n-1];
-	for (int i=0;i<=n-1;i++)
-	{
-	    res.x+=tt*bincoeff[i]*points[i].x;
-	    res.y+=tt*bincoeff[i]*points[i].y;
-	    tt*=t/(1-t);
-	}
-	return res;
-    }
-};
-
-//const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
-const double BEZ11::bincoeff[n]={1,11,55,165,330,462,462,330,165,55,11,1};
 
 void MainWindow::saveReport() {
     auto fileName = QFileDialog::getSaveFileName(this,
@@ -358,6 +320,9 @@ void MainWindow::saveReport() {
 	    convs.push_back(cur);
 	    if (epcycle > epmax)
 		epmax = epcycle;
+	    QString out_name=re.FileName.mid(0,re.FileName.size()-4)+"_cut.alv";
+	    SaveCutResults(out_name.toStdString(),re.results,E2,dEpsilon);
+
 	}
 	std::vector<size_t> positions(convs.size());
 	std::vector<PreparedResult> avResults;

@@ -12,6 +12,16 @@ struct Result
     double sigma = 0.0;
     double epsilon = 0.0;
 
+    Result(int cycle_=0, double sigma_=0, double epsilon_=0):
+	cycle(cycle_),sigma(sigma_),epsilon(epsilon_)
+    {
+    }
+
+    Result(const PreparedResult & r):
+	cycle(r.cycle),sigma(r.sigma),epsilon(r.epsilon)
+    {
+    }
+
     friend std::istream& operator>>(std::istream& is, Result& result)
     {
         char semicolon;
@@ -327,3 +337,43 @@ void convertFile(const std::string& inputFileName, const std::string& outputFile
     if (!printResults(outputFileName, results))
         throw std::runtime_error("can't print results");
 }
+
+void SaveCutResults(
+    const std::string & FileName,
+    const std::vector<PreparedResult> & src,
+    double E2, double delta)
+{
+    std::vector<Result> dst;
+    dst.clear();
+    dst.push_back(PreparedResult(0,0,0));
+    auto it = src.begin();
+    while (it->sigma > E2*(it->epsilon - delta) && it->cycle == 0 )
+    {
+	it++;
+	if (it == src.end())
+	    return;
+    }
+    while (it->cycle == 0)
+    {
+	dst.push_back(*it);
+	it++;
+	if (it == src.end())
+	    return;
+    }
+    int dir=-1;
+    while (it!=src.end())
+    {
+	int cur_cycle=it->cycle;
+	double e0 = it[-1].epsilon;
+	double s0 = it[-1].sigma;
+	while (it!=src.end() && dir*it->sigma > dir*(s0+E2*(it->epsilon-e0-dir*delta)) && it->cycle == cur_cycle)
+	    it++;
+	while (it!=src.end() && it->cycle == cur_cycle)
+	    dst.push_back(*it++);
+	dir=-dir;
+    }
+    printResults(FileName,dst);
+}
+
+//const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
+const double BEZ11::bincoeff[n]={1,11,55,165,330,462,462,330,165,55,11,1};
