@@ -348,6 +348,17 @@ void MainWindow::saveReport() {
 		n++;    
 	    }
 	    av_sig/=n;
+	    if (i == 1)
+	    {
+		double e0=avResults[1].epsilon,s0=avResults[1].sigma;
+		double e1=cur_eps+av_sig/sE, s1=av_sig;
+		for (int k=1;k<=10;k++)
+		{
+		    double e=e0+((e1-e0)*k)/11.;
+		    double s=s0+(s1-s0)/(e1-e0)*(e-e0);
+		    avResults.push_back(PreparedResult(0,s,e));
+		}
+	    }
 	    avResults.push_back(PreparedResult(0,av_sig, cur_eps+av_sig/sE));
 	}
 	out<<"Average curve:"<<'\n';
@@ -355,11 +366,11 @@ void MainWindow::saveReport() {
 	    out<<avResults[i].sigma<<'\t'<<avResults[i].epsilon<<'\n';
 	std::vector<PreparedResult> paintRes(10*10+1);
 	paintRes.push_back(PreparedResult(0,0,0));
-	BEZ11 b11(avResults);
+	BEZ<21> b11(avResults);
 
 	for (int i=0;i<=100;i++)
 	{
-	    BEZ11::point p=b11((double)i/100);
+	    BEZ<21>::point p=b11((double)i/100);
 	    paintRes.push_back(PreparedResult(0,p.y,p.x));
 	}
 	paintGraph(paintRes,"Температура: "+QString::number(temp),getMyColor   (ntemp)); 

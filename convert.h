@@ -16,16 +16,16 @@ void convertFile(const std::string& inputFileName, const std::string& outputFile
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1,bool & approx_good);
 double findSigma2(std::vector<PreparedResult> & results, double dEps, double E);
 
-class BEZ11
+template<unsigned N> class BEZ
 {
-    static constexpr int n = 12;
+    static constexpr int n = N+1;
     static const double bincoeff[n];
 public:   
     struct point
     {
 	double x,y;
     } points[n];
-    BEZ11(std::vector<PreparedResult> & avRes)
+    BEZ(std::vector<PreparedResult> & avRes)
     {
 	for (int i=0;i<n;i++)
 	{
