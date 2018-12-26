@@ -174,6 +174,17 @@ int sign_change(double x,double y)
 void splitToHalf(Results & results)
 {
     int hcn=0,hcs=1;
+    std::vector<int> c_nums;
+    int cur_cycle = results[0].cycle;
+    c_nums.push_back(cur_cycle);
+    for (auto & r: results)
+    {
+	if (r.cycle != cur_cycle)
+	{
+	    cur_cycle = r.cycle;
+	    c_nums.push_back(cur_cycle);
+	}
+    }
     for (size_t i=0;i<results.size();)
     {
 	size_t j,jmax;
@@ -186,7 +197,7 @@ void splitToHalf(Results & results)
 	    return;
 	}
 	for (size_t k=i;k<=jmax;k++)
-	    results[k].cycle=hcn;
+	    results[k].cycle=(c_nums[hcn/2]-1)*2+(hcn%2);
 	hcn++;
 	hcs=-hcs;
 	i=jmax+1;
