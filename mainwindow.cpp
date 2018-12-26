@@ -324,7 +324,7 @@ void MainWindow::saveReport() {
 	    if (epcycle > epmax)
 		epmax = epcycle;
 	    QString out_name=re.FileName.mid(0,re.FileName.size()-4)+".acv";
-	    SaveCutResults(out_name.toStdString(),re.results,E2,dEpsilon);
+	    SaveCutResults(out_name.toStdString(),re.results,re.E,dEpsilon);
 
 	}
 	std::vector<size_t> positions(convs.size());
