@@ -325,7 +325,10 @@ void MainWindow::saveReport() {
 		epmax = epcycle;
 	    QString out_name=re.FileName.mid(0,re.FileName.size()-4)+".acv";
 	    SaveCutResults(out_name.toStdString(),re.results,re.E,dEpsilon);
-
+	    std::vector<PreparedResult> cutRes;
+	    loadPrepared(cutRes,out_name);
+	    QString chi_name=re.FileName.mid(0,re.FileName.size()-4)+".chi";
+	    saveChi(chi_name.toStdString(),re.results,cutRes,re.E);
 	}
 	std::vector<size_t> positions(convs.size());
 	std::vector<PreparedResult> avResults;

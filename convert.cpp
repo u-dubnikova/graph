@@ -386,6 +386,57 @@ void SaveCutResults(
     printResults(FileName,dst);
 }
 
+double intersect(const PreparedResult& r1, const PreparedResult & r2)
+{
+    return (r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
+}
+
+void saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
+{
+    struct chi
+    {
+	int cycle;
+	double chi_orig;
+	double chi_cut;
+    }; 
+    constexpr double mul=sqrt(3.)/2.;
+    std::vector<chi> Chis;
+    int cnum = 0;
+    size_t norig=0,ncut=0;
+    double cum_chi_orig=0,cum_chi_cut=0;
+    while (norig<orig.size() && ncut<cut.size())
+    {
+	while (norig <orig.size() && orig[norig].cycle == cnum)
+	    norig++;
+	while (ncut <cut.size() && cut[ncut].cycle == cnum)
+	    ncut++;
+	if (norig == orig.size() || ncut == cut.size())
+	    break;
+	cnum = orig[norig].cycle;
+	if (cut[ncut].cycle != cnum)
+	    std::cout<<"cut cnum="<<cut[ncut].cycle<<"!="<<cnum<<std::endl;
+	while (sign_change(orig[norig].sigma,orig[norig+1].sigma) == 0)
+	    norig++;
+//	while (sign_change(cut[ncut].sigma,cut[ncut+1].sigma) == 0)
+//	    ncut++;
+
+	cum_chi_orig+=mul*fabs(intersect(orig[norig],orig[norig+1]));
+	cum_chi_cut+=mul*fabs(intersect(cut[ncut-1],cut[ncut]));
+	chi ch={cnum-1, cum_chi_orig,cum_chi_cut};
+	Chis.push_back(ch);
+    }
+    cum_chi_orig+=mul*fabs(orig[orig.size()-1].epsilon-orig[orig.size()-1].sigma/E);
+    cum_chi_cut+=mul*fabs(cut[cut.size()-1].epsilon-cut[cut.size()-1].sigma/E);
+    chi ch={cnum,cum_chi_orig,cum_chi_cut};
+    Chis.push_back(ch);
+    std::ofstream ofs(FileName);
+    if (!ofs)
+        return;
+
+    ofs << std::scientific << std::uppercase;
+    for (const auto& res : Chis)
+        ofs << res.cycle <<'\t' <<res.chi_orig<<'\t' <<res.chi_cut << '\n';
+}
 //const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
 template<> const double BEZ<11>::bincoeff[]={1,11,55,165,330,462,462,330,165,55,11,1};
 template<> const double BEZ<21>::bincoeff[]={1,21,210,1330,5985,20349,54264,116280,203490,293930,352716,352716,293930,203490,116280,54264,20349,5985,1330,210,21,1};

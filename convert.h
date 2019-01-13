@@ -16,6 +16,7 @@ void SaveCutResults(
 void convertFile(const std::string& inputFileName, const std::string& outputFileName);
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1,bool & approx_good);
 double findSigma2(std::vector<PreparedResult> & results, double dEps, double E);
+void saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E);
 
 template<unsigned N> class BEZ
 {
