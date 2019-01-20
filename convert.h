@@ -87,5 +87,11 @@ public:
     }
 };
 
+struct chi
+{
+    int cycle;
+    double chi_orig;
+    double chi_cut;
+}; 
 
 #endif // CONVERT_H

@@ -31,6 +31,7 @@ private slots:
 
 private:
     void paintGraph(std::vector<PreparedResult> & data, const QString& name, QColor color);
+    void paintChi(const QString & filename);
     void paintGraph(const QString& filename);
     bool loadPrepared(std::vector<PreparedResult> & results,const QString &filename);
 

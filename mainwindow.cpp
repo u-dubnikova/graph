@@ -43,7 +43,7 @@ void MainWindow::openTriggered()
 {
     auto fileName = QFileDialog::getOpenFileName(this,
                                                  "Open file with results", "",
-                                                 "ALV (*.alv);;Cut ALV(*.acv);;All Files (*)");
+                                                 "ALV (*.alv);;Cut ALV(*.acv);;Chi (*.chi);;All Files (*)");
     if (fileName.isEmpty())
            return;
 
@@ -77,6 +77,10 @@ bool MainWindow::loadPrepared(std::vector<PreparedResult> & results,const QStrin
 
 void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& name, QColor color)
 {
+    plot->xAxis->setLabel("Epsilon [-]");
+    plot->yAxis->setLabel("Sigma [GPa]");
+    plot->xAxis->setRange(-1, 1);
+    plot->yAxis->setRange(-1, 1);
     QVector<double> x, y;
     for (PreparedResult & result: data)
     {
@@ -88,10 +92,57 @@ void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& n
     graph->setName(name);
     graph->setPen(QPen(color));
 }
+void MainWindow::paintChi(const QString & filename)
+{
+    QVector<double> yorig,ycut,x; 
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(this, "Error",
+            "Unable to open file ");
+        return;
+    }
+    QTextStream in(&file);
+    while (!in.atEnd())
+    {
+	double ncyc,chiorig,chicut;
+        if (in.status() != QTextStream::Ok)
+        {
+            QMessageBox::information(this, "Error",
+                "Unable to read file, maybe wrong format");
+            return;
+        }
+        in >> ncyc >>chiorig>>chicut;
+        if (in.atEnd())
+	    break;
+	x.push_back(log10(ncyc+1));
+	yorig.push_back(log10(chiorig));
+	ycut.push_back(log10(chicut));
+    }
+    auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
+    graph->setData(x, yorig);
+    graph->setName("Original");
+    graph->setPen(QPen(Qt::blue));
+    auto graph2 = new QCPCurve(plot->xAxis, plot->yAxis);
+    graph2->setData(x, ycut);
+    graph2->setName("Cut");
+    graph2->setPen(QPen(Qt::red));
+    plot->xAxis->setLabel("lg(n+1) [-]");
+    plot->yAxis->setLabel("lg(Chi) [-]");
+    plot->xAxis->setRange(-1, 1);
+    plot->yAxis->setRange(-1, 1);
 
+    plot->rescaleAxes();
+    plot->replot();
+}
 void MainWindow::paintGraph(const QString& filename)
 {
     plot->clearPlottables();
+    if (filename.mid(filename.size()-4) == ".chi")
+    {
+	paintChi(filename);
+	return;
+    }
+
     std::vector<PreparedResult> results;
     if (!loadPrepared(results,filename))
     {
