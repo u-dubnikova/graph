@@ -81,6 +81,8 @@ void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& n
     plot->yAxis->setLabel("Sigma [GPa]");
     plot->xAxis->setRange(-1, 1);
     plot->yAxis->setRange(-1, 1);
+    plot->xAxis->setScaleType(QCPAxis::stLinear);
+    plot->yAxis->setScaleType(QCPAxis::stLinear);
     QVector<double> x, y;
     for (PreparedResult & result: data)
     {
@@ -88,6 +90,7 @@ void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& n
         y.append(result.sigma);
     }
     auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
+
     graph->setData(x, y);
     graph->setName(name);
     graph->setPen(QPen(color));
@@ -114,9 +117,9 @@ void MainWindow::paintChi(const QString & filename)
         in >> ncyc >>chiorig>>chicut;
         if (in.atEnd())
 	    break;
-	x.push_back(log10(ncyc+1));
-	yorig.push_back(log10(chiorig));
-	ycut.push_back(log10(chicut));
+	x.push_back(ncyc+1);
+	yorig.push_back(chiorig);
+	ycut.push_back(chicut);
     }
     auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
     graph->setData(x, yorig);
@@ -126,10 +129,12 @@ void MainWindow::paintChi(const QString & filename)
     graph2->setData(x, ycut);
     graph2->setName("Cut");
     graph2->setPen(QPen(Qt::red));
-    plot->xAxis->setLabel("lg(n+1) [-]");
-    plot->yAxis->setLabel("lg(Chi) [-]");
-    plot->xAxis->setRange(-1, 1);
-    plot->yAxis->setRange(-1, 1);
+    plot->xAxis->setLabel("n [-]");
+    plot->yAxis->setLabel("Chi [-]");
+    plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+    plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+    plot->xAxis->setRange(0, x[x.size()-1]);
+    plot->yAxis->setRange(0, yorig[yorig.size()-1]);
 
     plot->rescaleAxes();
     plot->replot();
