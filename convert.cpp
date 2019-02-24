@@ -393,7 +393,7 @@ double intersect(const PreparedResult& r1, const PreparedResult & r2)
 
 void saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
 {
-    const double mul=sqrt(3.)/2.;
+    const double mul=1;//sqrt(3.)/2.;
     std::vector<chi> Chis;
     int cnum = 0,save_cycle=-1;
     size_t norig=0,ncut=0;
