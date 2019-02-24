@@ -132,7 +132,15 @@ void MainWindow::paintChi(const QString & filename)
     plot->xAxis->setLabel("n [-]");
     plot->yAxis->setLabel("Chi [-]");
     plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+    QSharedPointer<QCPAxisTickerLog> xtick(new QCPAxisTickerLog);
+    xtick->setLogBase(1.05);
+    plot->xAxis->setNumberPrecision(0);
+    plot->xAxis->setTicker(xtick);
     plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+    QSharedPointer<QCPAxisTickerLog> ytick(new QCPAxisTickerLog);
+    ytick->setLogBase(1.05);
+    plot->yAxis->setNumberPrecision(2);
+    plot->yAxis->setTicker(ytick);
     plot->xAxis->setRange(0, x[x.size()-1]);
     plot->yAxis->setRange(0, yorig[yorig.size()-1]);
 
