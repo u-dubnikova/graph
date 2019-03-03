@@ -43,7 +43,7 @@ void MainWindow::openTriggered()
 {
     auto fileName = QFileDialog::getOpenFileName(this,
                                                  "Open file with results", "",
-                                                 "ALV (*.alv);;Cut ALV(*.acv);;Chi (*.chi);;All Files (*)");
+                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;All Files (*)");
     if (fileName.isEmpty())
            return;
 
@@ -165,6 +165,8 @@ void MainWindow::paintGraph(const QString& filename)
     QColor c=Qt::blue;
     if (filename.mid(filename.size()-4) == ".acv")
 	c = Qt::red;
+    else if (filename.mid(filename.size()-4) == ".acc")
+	c = Qt::green;
     paintGraph(results,filename, c);
     plot->rescaleAxes();
     plot->replot();
@@ -311,22 +313,28 @@ static QColor getMyColor(int nres)
 
 
 void MainWindow::saveReport() {
-    auto fileName = QFileDialog::getSaveFileName(this,
+    QString fileName = QFileDialog::getSaveFileName(this,
                                                  "Save Report", "",
                                                  "RPT (*.rpt);;All Files (*)");
-    QFile file(fileName);
-    if (!file.open(QIODevice::WriteOnly)) {
+    QString fileName2 = fileName+"2";
+    QFile file(fileName),file2(fileName2);
+
+
+    if (!file.open(QIODevice::WriteOnly) || !file2.open(QIODevice::WriteOnly)) {
         QMessageBox::information(this, "Error",
             "Unable to open file ");
         return;
     }
+
     QTextStream out(&file);
+    QTextStream out2(&file2);
     out<<"Delta:"<<dEpsilon<<"\n";
     int ntemp=0;
     plot->clearPlottables();
     for (double temp: temps)
     {
         out<<"Temperature: "<<temp<<"\n";
+        out2<<"Temperature: "<<temp<<"\n";
         auto range = report.equal_range(temp);
 	int count=0;
 	double sE=0.,sS=0.,s2=0.,E2;
@@ -387,12 +395,13 @@ void MainWindow::saveReport() {
 	    convs.push_back(cur);
 	    if (epcycle > epmax)
 		epmax = epcycle;
-	    QString out_name=re.FileName.mid(0,re.FileName.size()-4)+".acv";
+	    QString out_name=re.FileName.mid(0,re.FileName.size()-4);
 	    SaveCutResults(out_name.toStdString(),re.results,re.E,dEpsilon);
 	    std::vector<PreparedResult> cutRes;
-	    loadPrepared(cutRes,out_name);
-	    QString chi_name=re.FileName.mid(0,re.FileName.size()-4)+".chi";
-	    saveChi(chi_name.toStdString(),re.results,cutRes,re.E);
+	    loadPrepared(cutRes,out_name+".acv");
+	    QString chi_name=out_name+".chi";
+	    out2<<re.FileName<<"::";
+	    out2<<re.E<<'\t'<<saveChi(chi_name.toStdString(),re.results,cutRes,re.E)<<'\n';
 	}
 	std::vector<size_t> positions(convs.size());
 	std::vector<PreparedResult> avResults;

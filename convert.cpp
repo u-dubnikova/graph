@@ -383,7 +383,17 @@ void SaveCutResults(
 	    dst.push_back(*it++);
 	dir=-dir;
     }
-    printResults(FileName,dst);
+    printResults(FileName+".acv",dst);
+    int nc=0;
+    size_t itd=dst.size()-1;
+    int cc = dst[itd].cycle;
+    for (;itd!=0 && nc<2;itd--)
+	if (dst[itd].cycle !=cc)
+	{
+	    cc = dst[itd].cycle;
+	    nc++;
+	}
+    printResults(FileName+".acc",std::vector<Result>(dst.begin()+itd,dst.end()));
 }
 
 double intersect(const PreparedResult& r1, const PreparedResult & r2)
@@ -391,7 +401,7 @@ double intersect(const PreparedResult& r1, const PreparedResult & r2)
     return (r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
 }
 
-void saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
+double saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
 {
     const double mul=1;//sqrt(3.)/2.;
     std::vector<chi> Chis;
@@ -441,11 +451,12 @@ void saveChi(const std::string & FileName, const std::vector<PreparedResult>& or
     Chis.push_back(ch);
     std::ofstream ofs(FileName);
     if (!ofs)
-        return;
+        return NAN;
 
     ofs << std::scientific << std::uppercase;
     for (const auto& res : Chis)
         ofs << res.cycle <<'\t' <<res.chi_orig<<'\t' <<res.chi_cut << '\n';
+    return cum_chi_cut;
 }
 //const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
 template<> const double BEZ<11>::bincoeff[]={1,11,55,165,330,462,462,330,165,55,11,1};
