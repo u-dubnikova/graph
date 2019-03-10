@@ -79,16 +79,33 @@ void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& n
 {
     plot->xAxis->setLabel("Epsilon [-]");
     plot->yAxis->setLabel("Sigma [GPa]");
-    plot->xAxis->setRange(-1, 1);
-    plot->yAxis->setRange(-1, 1);
     plot->xAxis->setScaleType(QCPAxis::stLinear);
     plot->yAxis->setScaleType(QCPAxis::stLinear);
     QVector<double> x, y;
+    double epsmax=data[0].epsilon,epsmin=epsmax;
+    double sigmax=data[0].sigma,sigmin=sigmax;
     for (PreparedResult & result: data)
     {
+	if (result.epsilon > epsmax )
+	    epsmax = result.epsilon;
+	else if (result.epsilon < epsmin )
+	    epsmin = result.epsilon;
+	if (result.sigma > sigmax )
+	    sigmax = result.sigma;
+	else if (result.sigma < sigmin )
+	    sigmin = result.sigma;
         x.append(result.epsilon);
         y.append(result.sigma);
     }
+    QSharedPointer<QCPAxisTickerFixed> xtick(new QCPAxisTickerFixed());
+    QSharedPointer<QCPAxisTickerFixed> ytick(new QCPAxisTickerFixed());
+    xtick->setTickStep(exp(floor(log10(epsmax-epsmin)-0.5)*log(10)));
+    ytick->setTickStep(exp(floor(log10(sigmax-sigmin)-0.5)*log(10)));
+    plot->xAxis->setTicker(xtick);
+    plot->yAxis->setTicker(ytick);
+    plot->xAxis->setRange(epsmin,epsmax);
+    plot->yAxis->setRange(sigmin, sigmax);
+
     auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
 
     graph->setData(x, y);
@@ -130,7 +147,7 @@ void MainWindow::paintChi(const QString & filename)
     graph2->setName("Cut");
     graph2->setPen(QPen(Qt::red));
     plot->xAxis->setLabel("n [-]");
-    plot->yAxis->setLabel("Chi [-]");
+    plot->yAxis->setLabel("Chi [%]");
     plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
     QSharedPointer<QCPAxisTickerLog> xtick(new QCPAxisTickerLog);
     xtick->setLogBase(1.05);
@@ -138,7 +155,7 @@ void MainWindow::paintChi(const QString & filename)
     plot->xAxis->setTicker(xtick);
     plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
     QSharedPointer<QCPAxisTickerLog> ytick(new QCPAxisTickerLog);
-    ytick->setLogBase(1.05);
+    ytick->setLogBase(1.25892541179416721042);
     plot->yAxis->setNumberPrecision(2);
     plot->yAxis->setTicker(ytick);
     plot->xAxis->setRange(0, x[x.size()-1]);

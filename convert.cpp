@@ -334,6 +334,18 @@ double findSigma2(std::vector<PreparedResult> & results, double dEps, double E)
     return get_sigma(results[i_s-1],results[i_s],E,dEps);    	
 }
 
+void removeLastEven(Results & results)
+{
+    if (results.size() == 0 || results[results.size()-1].cycle%2 == 1 )
+	return;
+    int i;
+    for (i = results.size()-1;i>=0;i--)
+	if (results[i].cycle%2!=0)
+	    break;
+    results.resize(i+1);
+}
+
+
 void convertFile(const std::string& inputFileName, const std::string& outputFileName)
 {
     Results results;
@@ -345,6 +357,7 @@ void convertFile(const std::string& inputFileName, const std::string& outputFile
     transformResults(results);
     filterResults(results);
     splitToHalf(results);
+    removeLastEven(results);
     if (!printResults(outputFileName, results))
         throw std::runtime_error("can't print results");
 }
@@ -377,6 +390,8 @@ void SaveCutResults(
 	int cur_cycle=it->cycle;
 	double e0 = it[-1].epsilon;
 	double s0 = it[-1].sigma;
+	if (dir == 1)
+	    dst.push_back(*it++);
 	while (it!=src.end() && dir*it->sigma > dir*(s0+E2*(it->epsilon-e0-dir*delta)) && it->cycle == cur_cycle)
 	    it++;
 	while (it!=src.end() && it->cycle == cur_cycle)
@@ -393,6 +408,7 @@ void SaveCutResults(
 	    cc = dst[itd].cycle;
 	    nc++;
 	}
+    itd++;
     printResults(FileName+".acc",std::vector<Result>(dst.begin()+itd,dst.end()));
 }
 
@@ -453,9 +469,9 @@ double saveChi(const std::string & FileName, const std::vector<PreparedResult>& 
     if (!ofs)
         return NAN;
 
-    ofs << std::scientific << std::uppercase;
+    //ofs << std::scientific << std::uppercase;
     for (const auto& res : Chis)
-        ofs << res.cycle <<'\t' <<res.chi_orig<<'\t' <<res.chi_cut << '\n';
+        ofs << res.cycle*100 <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
     return cum_chi_cut;
 }
 //const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
