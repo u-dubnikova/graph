@@ -188,7 +188,7 @@ void splitToHalf(Results & results)
     for (size_t i=0;i<results.size();)
     {
 	size_t j,jmax;
-	for (j=jmax=i;j<results.size()-1 && sign_change(results[j].sigma,results[j+1].sigma)!=hcs;j++)
+	for (j=jmax=i;j<results.size()-1 && (jmax-i<=10 || sign_change(results[j].sigma,results[j+1].sigma)!=hcs);j++)
 	    if (hcs*results[j].epsilon > hcs*results[jmax].epsilon )
 		jmax=j;
 	if (j == results.size() - 1)	
@@ -408,12 +408,12 @@ void SaveCutResults(
 	    cc = dst[itd].cycle;
 	    nc++;
 	}
-    itd++;
-    printResults(FileName+".acc",std::vector<Result>(dst.begin()+itd,dst.end()));
+    printResults(FileName+".acc",std::vector<Result>(dst.begin()+itd+2,dst.end()));
 }
 
 double intersect(const PreparedResult& r1, const PreparedResult & r2)
 {
+    std::cout<<r1.sigma<<'\t'<<r2.sigma<<'\n';
     return (r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
 }
 
@@ -423,7 +423,7 @@ double saveChi(const std::string & FileName, const std::vector<PreparedResult>& 
     std::vector<chi> Chis;
     int cnum = 0,save_cycle=-1;
     size_t norig=0,ncut=0;
-    double save_chi_orig,save_chi_cut;
+    double save_chi_orig=0,save_chi_cut=0;
     double cum_chi_orig=0,cum_chi_cut=0;
     while (norig<orig.size() && ncut<cut.size())
     {
@@ -439,10 +439,10 @@ double saveChi(const std::string & FileName, const std::vector<PreparedResult>& 
 	    std::cout<<"cut cnum="<<cut[ncut].cycle<<"!="<<cnum<<std::endl;
 	while (sign_change(orig[norig].sigma,orig[norig+1].sigma) == 0)
 	    norig++;
-//	while (sign_change(cut[ncut].sigma,cut[ncut+1].sigma) == 0)
-//	    ncut++;
+	while (sign_change(cut[ncut].sigma,cut[ncut+1].sigma) == 0)
+	    ncut++;
 	cur_chi_orig=mul*fabs(intersect(orig[norig],orig[norig+1]));
-	cur_chi_cut=mul*fabs(intersect(cut[ncut-1],cut[ncut]));
+	cur_chi_cut=mul*fabs(intersect(cut[ncut],cut[ncut+1]));
 	if (save_cycle != -1)
 	{
 	    for (int i=save_cycle+1;i < cnum;i++)
@@ -467,11 +467,14 @@ double saveChi(const std::string & FileName, const std::vector<PreparedResult>& 
     Chis.push_back(ch);
     std::ofstream ofs(FileName);
     if (!ofs)
+    {
+	std::cout<<"Cannot open "<<FileName<<std::endl;
         return NAN;
+    }
 
     //ofs << std::scientific << std::uppercase;
     for (const auto& res : Chis)
-        ofs << res.cycle*100 <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
+        ofs << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
     return cum_chi_cut;
 }
 //const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};

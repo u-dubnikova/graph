@@ -418,7 +418,7 @@ void MainWindow::saveReport() {
 	    loadPrepared(cutRes,out_name+".acv");
 	    QString chi_name=out_name+".chi";
 	    out2<<re.FileName<<"::";
-	    out2<<re.E<<'\t'<<saveChi(chi_name.toStdString(),re.results,cutRes,re.E)<<'\n';
+	    out2<<re.E<<'\t'<<saveChi(chi_name.toStdString(),re.results,cutRes,re.E)*100<<'\n';
 	}
 	std::vector<size_t> positions(convs.size());
 	std::vector<PreparedResult> avResults;
