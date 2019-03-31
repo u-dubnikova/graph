@@ -417,7 +417,7 @@ double intersect(const PreparedResult& r1, const PreparedResult & r2)
     return (r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
 }
 
-double saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
+chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
 {
     const double mul=1;//sqrt(3.)/2.;
     std::vector<chi> Chis;
@@ -469,13 +469,13 @@ double saveChi(const std::string & FileName, const std::vector<PreparedResult>& 
     if (!ofs)
     {
 	std::cout<<"Cannot open "<<FileName<<std::endl;
-        return NAN;
+        return ch;
     }
 
     //ofs << std::scientific << std::uppercase;
     for (const auto& res : Chis)
         ofs << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
-    return cum_chi_cut;
+    return ch;
 }
 //const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
 template<> const double BEZ<11>::bincoeff[]={1,11,55,165,330,462,462,330,165,55,11,1};
