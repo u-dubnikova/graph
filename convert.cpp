@@ -477,6 +477,31 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
         ofs << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
     return ch;
 }
+static inline double sqr(double x)
+{
+    return x*x;
+}
+
+void LQRPT2(const std::vector<RPT2Entry> & data, double & k, double & b)
+{
+    int n = data.size();
+    double cyc_av=0,chi_av=0;
+    for (const auto & r: data)
+    {
+	cyc_av+=log(r.cycle);
+	chi_av+=log(r.chi);
+    }
+    cyc_av/=(double)n;
+    chi_av/=(double)n;
+    double num=0, denom=0;
+    for (const auto & r: data)
+    {
+	num+=(log(r.cycle)-cyc_av)*(log(r.chi)-chi_av);
+	denom+=sqr(log(r.cycle)-cyc_av);
+    }
+    k=num/denom;
+    b=chi_av-k*cyc_av;
+}
 //const double BEZ11::bincoeff[n]={1,10,45,120,210,252,210,120,45,10,1};
 template<> const double BEZ<11>::bincoeff[]={1,11,55,165,330,462,462,330,165,55,11,1};
 template<> const double BEZ<21>::bincoeff[]={1,21,210,1330,5985,20349,54264,116280,203490,293930,352716,352716,293930,203490,116280,54264,20349,5985,1330,210,21,1};

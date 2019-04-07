@@ -43,7 +43,7 @@ void MainWindow::openTriggered()
 {
     auto fileName = QFileDialog::getOpenFileName(this,
                                                  "Open file with results", "",
-                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;All Files (*)");
+                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;Chi reports (*.rpt2);;All Files (*)");
     if (fileName.isEmpty())
            return;
 
@@ -112,6 +112,7 @@ void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& n
     graph->setName(name);
     graph->setPen(QPen(color));
 }
+
 void MainWindow::paintChi(const QString & filename)
 {
     QVector<double> yorig,ycut,x; 
@@ -164,6 +165,139 @@ void MainWindow::paintChi(const QString & filename)
     plot->rescaleAxes();
     plot->replot();
 }
+
+static QColor getMyColor(int nres)
+{
+    switch(nres)
+    {
+	case 0: return QColor(0,0,0);
+	case 1: return QColor(255,0,0);
+	case 2: return QColor(0,0,255);
+	case 3: return QColor(0,255,0);
+	default:
+	    return QColor(nres*5,100+nres*2,255-nres*3);
+    }
+}
+
+
+void MainWindow::paintRPT2(const QString & filename)
+{
+    QFile file(filename);
+    std::vector<RPT2Entry> entries;
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(this, "Error",
+            "Unable to open file ");
+        return;
+    }
+    QTextStream in(&file);
+    QString str;
+    double temp=-1;
+    int pos;
+    while (in.readLineInto(&str))
+    {
+	if (str.indexOf("Temperature:")==0)
+	{
+	    if (sscanf(str.toStdString().c_str(), "Temperature: %lf", &temp)!=1)
+	    {
+		QMessageBox::information(this, "Error",
+		    "invalid file format");
+		return;
+	    }
+	}
+	else if ( ( pos = str.indexOf("::") ) != -1)
+	{
+	    double chi, eps;
+	    int ncyc;
+	    if (sscanf(str.mid(pos+2).toStdString().c_str(),"%d%lf%lf",&ncyc,&eps,&chi)!=3)
+	    {
+		QMessageBox::information(this, "Error",
+		    "invalid file format");
+		return;
+	    }
+	    RPT2Entry rp = { temp, ncyc+1, chi };
+	    entries.push_back(rp);
+	}
+	else
+	{
+	    QMessageBox::information(this, "Error",
+		"invalid file format");
+	    return;
+
+	}
+    }
+    int cur_num=0;
+    int max_cycle=0;
+    double max_chi=0;
+    double cur_temp=entries[0].temp;
+    QVector<double> x,y;
+    char buffer[256];
+    
+    for (const auto &r: entries)
+    {
+	if (r.temp !=cur_temp)
+	{
+	    QCPGraph * gr = new QCPGraph(plot->xAxis, plot->yAxis);
+	    gr->setAdaptiveSampling(false);
+	    gr->setLineStyle(QCPGraph::lsNone);
+	    gr->setScatterStyle(QCPScatterStyle::ssCircle);
+	    gr->setPen(QPen(getMyColor(cur_num)));
+	    gr->addData(x,y);
+	    snprintf(buffer,256,"%lf",cur_temp);
+	    gr->setName(buffer);
+	    cur_num++;
+	    cur_temp=r.temp;
+	    x.clear();
+	    y.clear();
+	}
+	x.push_back(r.cycle);
+	y.push_back(r.chi);
+	if (r.cycle > max_cycle)
+	    max_cycle = r.cycle;
+	if (r.chi > max_chi )
+	    max_chi = r.chi;
+    }
+    QCPGraph * gr = new QCPGraph(plot->xAxis, plot->yAxis);
+    gr->setAdaptiveSampling(false);
+    gr->setLineStyle(QCPGraph::lsNone);
+    gr->setScatterStyle(QCPScatterStyle::ssCircle);
+    gr->setPen(QPen(getMyColor(cur_num)));
+    snprintf(buffer,256,"%lf",cur_temp);
+    gr->setName(buffer);
+    gr->addData(x,y);
+    double k,b;
+    LQRPT2(entries,k,b);
+    x.clear();
+    y.clear();
+    double dlogx=log(max_cycle)/20;
+    for (int i=0;i<=20;i++)
+    {
+	x.push_back(exp(i*dlogx));
+	y.push_back(exp(k*i*dlogx+b));
+    }
+    auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
+    graph->setData(x, y);
+    graph->setName("Regression");
+    graph->setPen(QPen(Qt::black));
+    plot->xAxis->setLabel("n [-]");
+    plot->yAxis->setLabel("Chi [%]");
+    plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+    QSharedPointer<QCPAxisTickerLog> xtick(new QCPAxisTickerLog);
+    xtick->setLogBase(1.05);
+    plot->xAxis->setNumberPrecision(0);
+    plot->xAxis->setTicker(xtick);
+    plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+    QSharedPointer<QCPAxisTickerLog> ytick(new QCPAxisTickerLog);
+    ytick->setLogBase(1.25892541179416721042);
+    plot->yAxis->setNumberPrecision(2);
+    plot->yAxis->setTicker(ytick);
+    plot->xAxis->setRange(0, max_cycle);
+    plot->yAxis->setRange(0, max_chi);
+
+    plot->rescaleAxes();
+    plot->replot();
+}
+
+
 void MainWindow::paintGraph(const QString& filename)
 {
     plot->clearPlottables();
@@ -172,6 +306,13 @@ void MainWindow::paintGraph(const QString& filename)
 	paintChi(filename);
 	return;
     }
+
+    if (filename.mid(filename.size()-5) == ".rpt2")
+    {
+	paintRPT2(filename);
+	return;
+    }
+
 
     std::vector<PreparedResult> results;
     if (!loadPrepared(results,filename))
@@ -313,19 +454,6 @@ void MainWindow::setDelta()
         return;
     }
     dEpsilon = delta/100;
-}
-
-static QColor getMyColor(int nres)
-{
-    switch(nres)
-    {
-	case 0: return QColor(0,0,0);
-	case 1: return QColor(255,0,0);
-	case 2: return QColor(0,0,255);
-	case 3: return QColor(0,255,0);
-	default:
-	    return QColor(nres*5,100+nres*2,255-nres*3);
-    }
 }
 
 
