@@ -276,7 +276,10 @@ void MainWindow::paintRPT2(const QString & filename)
     }
     auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
     graph->setData(x, y);
-    graph->setName("Regression");
+    snprintf(buffer,256,"reg: ln y = %lf ln x + %lf",k,b);
+    //snprintf(buffer,256,"reg: y = %lf*x^%lf",exp(b),k);
+
+    graph->setName(buffer);
     graph->setPen(QPen(Qt::black));
     plot->xAxis->setLabel("n [-]");
     plot->yAxis->setLabel("Chi [%]");

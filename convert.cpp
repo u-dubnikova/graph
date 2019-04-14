@@ -345,6 +345,20 @@ void removeLastEven(Results & results)
     results.resize(i+1);
 }
 
+void removeDuplicates(Results & results)
+{
+    Results new_res; 
+    new_res.push_back(results[0]);
+    size_t k = 0;
+    for (size_t n=1;n<results.size();n++)
+	if (results[n].epsilon != results[k].epsilon || results[n].sigma != results[k].sigma)
+	{
+	    k = n;
+	    new_res.push_back(results[n]);
+	}
+    results = new_res;
+}
+
 
 void convertFile(const std::string& inputFileName, const std::string& outputFileName)
 {
@@ -358,6 +372,7 @@ void convertFile(const std::string& inputFileName, const std::string& outputFile
     filterResults(results);
     splitToHalf(results);
     removeLastEven(results);
+    removeDuplicates(results);
     if (!printResults(outputFileName, results))
         throw std::runtime_error("can't print results");
 }
@@ -465,6 +480,15 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
     cum_chi_cut+=mul*fabs(cut[cut.size()-1].epsilon-cut[cut.size()-1].sigma/E);
     chi ch={cnum,cum_chi_orig,cum_chi_cut};
     Chis.push_back(ch);
+    std::vector<chi> ChiNew(Chis.size());
+    ChiNew[0]=Chis[0];
+    for (size_t i = 1;i< Chis.size(); i++)
+	ChiNew[i] = {
+	    Chis[i].cycle,
+	    Chis[i].chi_orig+Chis[i-1].chi_orig,
+	    Chis[i].chi_cut+Chis[i-1].chi_cut
+	};
+
     std::ofstream ofs(FileName);
     if (!ofs)
     {
@@ -473,7 +497,8 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
     }
 
     //ofs << std::scientific << std::uppercase;
-    for (const auto& res : Chis)
+//    for (const auto& res : Chis)
+    for (const auto& res : ChiNew)
         ofs << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
     return ch;
 }
