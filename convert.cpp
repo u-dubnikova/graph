@@ -407,8 +407,17 @@ void SaveCutResults(
 	double s0 = it[-1].sigma;
 	if (dir == 1)
 	    dst.push_back(*it++);
+#if 0
 	while (it!=src.end() && dir*it->sigma > dir*(s0+E2*(it->epsilon-e0-dir*delta)) && it->cycle == cur_cycle)
 	    it++;
+#else
+	auto it2=it;
+	while (it+1!=src.end() && it[1].cycle == cur_cycle)
+	    it++;
+	while (it != it2 && dir*it->sigma <= dir*(s0+E2*(it->epsilon-e0-dir*delta)))
+	    it--;
+	it++;
+#endif
 	while (it!=src.end() && it->cycle == cur_cycle)
 	    dst.push_back(*it++);
 	dir=-dir;
@@ -493,14 +502,14 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
     if (!ofs)
     {
 	std::cout<<"Cannot open "<<FileName<<std::endl;
-        return ch;
+        return ChiNew[ChiNew.size()-1];
     }
 
     //ofs << std::scientific << std::uppercase;
 //    for (const auto& res : Chis)
     for (const auto& res : ChiNew)
         ofs << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
-    return ch;
+    return ChiNew[ChiNew.size()-1];
 }
 static inline double sqr(double x)
 {
