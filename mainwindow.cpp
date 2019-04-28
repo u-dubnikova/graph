@@ -52,6 +52,7 @@ void MainWindow::openTriggered()
 
 bool MainWindow::loadPrepared(std::vector<PreparedResult> & results,const QString &filename)
 {
+    results.clear();
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::information(this, "Error",

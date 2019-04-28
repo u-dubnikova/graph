@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <qmath.h>
+#include <assert.h>
 
 struct Result
 {
@@ -437,10 +438,21 @@ void SaveCutResults(
 
 double intersect(const PreparedResult& r1, const PreparedResult & r2)
 {
-    std::cout<<r1.sigma<<'\t'<<r2.sigma<<'\n';
-    return (r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
+//    std::cout<<r1.sigma<<'\t'<<r2.sigma<<'\n';
+    double res=(r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
+    if (fabs(res)>0.05)
+    {
+	std::cout<<"c1="<<r1.cycle<<",c2="<<r2.cycle;
+	std::cout<<",e1="<<r1.epsilon<<",e2="<<r2.epsilon;
+	std::cout<<",s1="<<r1.sigma<<",s2="<<r2.sigma<<'\n';
+    }
+    return res;
 }
-
+double av(double i, double nstart, double nfinish, double xstart, double xfinish)
+{
+    double t=(i-nstart)/(nfinish-nstart);
+    return (1-t)*xstart+t*xfinish;
+}
 chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
 {
     const double mul=1;//sqrt(3.)/2.;
@@ -452,27 +464,42 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
     while (norig<orig.size() && ncut<cut.size())
     {
 	double cur_chi_orig, cur_chi_cut;
+	double inter_orig,inter_cut;
 	while (norig <orig.size() && orig[norig].cycle == cnum)
 	    norig++;
 	while (ncut <cut.size() && cut[ncut].cycle == cnum)
 	    ncut++;
-	if (norig == orig.size() || ncut == cut.size())
+	if (norig >= orig.size()-1 || ncut >= cut.size()-1 )
 	    break;
 	cnum = orig[norig].cycle;
 	if (cut[ncut].cycle != cnum)
-	    std::cout<<"cut cnum="<<cut[ncut].cycle<<"!="<<cnum<<std::endl;
-	while (sign_change(orig[norig].sigma,orig[norig+1].sigma) == 0)
+	    std::cout<<FileName<<":cut cnum="<<cut[ncut].cycle<<"!="<<cnum<<std::endl;
+	while (norig+2 < orig.size() && sign_change(orig[norig].sigma,orig[norig+1].sigma) == 0)
 	    norig++;
-	while (sign_change(cut[ncut].sigma,cut[ncut+1].sigma) == 0)
+	while (ncut+2 < cut.size() && sign_change(cut[ncut].sigma,cut[ncut+1].sigma) == 0)
 	    ncut++;
-	cur_chi_orig=mul*fabs(intersect(orig[norig],orig[norig+1]));
-	cur_chi_cut=mul*fabs(intersect(cut[ncut],cut[ncut+1]));
+	assert(norig+1<orig.size());
+	assert(ncut+1<cut.size());
+	if (norig+1 < orig.size())
+	    cur_chi_orig=mul*fabs(inter_orig=intersect(orig[norig],orig[norig+1]));
+	if (ncut+1 < cut.size())
+	    cur_chi_cut=mul*fabs(inter_cut=intersect(cut[ncut],cut[ncut+1]));
+	if (norig+1 <orig.size() && ncut+1< cut.size() && fabs(inter_cut) >fabs(inter_orig ) )
+	{
+	    std::cout<<FileName<<":cnum="<<cnum<<",int_orig="<<inter_orig<<", int_cut="<<inter_cut<<std::endl;
+	}
+	
 	if (save_cycle != -1)
 	{
 	    for (int i=save_cycle+1;i < cnum;i++)
 	    {
+#if 0
 	    	cum_chi_orig+=save_chi_orig+(double)(i-save_cycle)/(cnum-save_cycle)*(cur_chi_orig-save_chi_orig);
 	    	cum_chi_cut+=save_chi_cut+(double)(i-save_cycle)/(cnum-save_cycle)*(cur_chi_cut-save_chi_cut);
+#else
+		cum_chi_orig+=av(i,save_cycle,cnum,save_chi_orig,cur_chi_orig);
+		cum_chi_cut+=av(i,save_cycle,cnum,save_chi_cut,cur_chi_cut);
+#endif
 		chi ch={i-1, cum_chi_orig,cum_chi_cut};
 		Chis.push_back(ch);
 	    }
