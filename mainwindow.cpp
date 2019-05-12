@@ -243,7 +243,7 @@ void MainWindow::paintRPT2(const QString & filename)
 	    gr->setScatterStyle(QCPScatterStyle::ssCircle);
 	    gr->setPen(QPen(getMyColor(cur_num)));
 	    gr->addData(x,y);
-	    snprintf(buffer,256,"%lf",cur_temp);
+	    snprintf(buffer,256,"%G",cur_temp);
 	    gr->setName(buffer);
 	    cur_num++;
 	    cur_temp=r.temp;
@@ -262,7 +262,7 @@ void MainWindow::paintRPT2(const QString & filename)
     gr->setLineStyle(QCPGraph::lsNone);
     gr->setScatterStyle(QCPScatterStyle::ssCircle);
     gr->setPen(QPen(getMyColor(cur_num)));
-    snprintf(buffer,256,"%lf",cur_temp);
+    snprintf(buffer,256,"%G",cur_temp);
     gr->setName(buffer);
     gr->addData(x,y);
     double k,b;
@@ -277,7 +277,7 @@ void MainWindow::paintRPT2(const QString & filename)
     }
     auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
     graph->setData(x, y);
-    snprintf(buffer,256,"reg: ln y = %lf ln x + %lf",k,b);
+    snprintf(buffer,256,"reg: lg y = 1/%lf lg x+ lg(%lf)",1./k,exp(b));
     //snprintf(buffer,256,"reg: y = %lf*x^%lf",exp(b),k);
 
     graph->setName(buffer);
@@ -329,6 +329,42 @@ void MainWindow::paintGraph(const QString& filename)
 	c = Qt::red;
     else if (filename.mid(filename.size()-4) == ".acc")
 	c = Qt::green;
+    bool bOk;
+    int fin_cycle=results[results.size()-1].cycle;
+    int n0 = QInputDialog::getInt( this,
+                                     "Номер начального цикла",
+                                     "Начальный цикл:",
+                                     0,
+                                     0,
+                                     fin_cycle,
+                                     1,
+                                     &bOk
+                                    );
+    if (!bOk) {
+	n0=0;
+    }
+    int n1 = QInputDialog::getInt( this,
+                                     "Номер конечного цикла",
+                                     "Конечный цикл:",
+                                     fin_cycle,
+                                     n0,
+                                     fin_cycle,
+                                     1,
+                                     &bOk
+                                    );
+    if (!bOk) {
+	n1=fin_cycle;
+    }
+
+    size_t c0=0;
+    while (c0 < results.size() && results[c0].cycle < n0 )
+	c0++;
+    size_t c1=c0;
+    while (c1 < results.size() && results[c1].cycle <= n1 )
+	c1++;
+    results.erase(results.begin()+c1,results.end());
+    results.erase(results.begin(),results.begin()+c0);
+	
     paintGraph(results,filename, c);
     plot->rescaleAxes();
     plot->replot();
