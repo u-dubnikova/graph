@@ -29,7 +29,7 @@ void SaveCutResults(
     const std::vector<PreparedResult> & src,
     double E2, double delta);
 
-void convertFile(const std::string& inputFileName, const std::string& outputFileName);
+void convertFile(const std::string& inputFileName, const std::string& outputFileName, unsigned minlen);
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1,bool & approx_good);
 double findSigma2(std::vector<PreparedResult> & results, double dEps, double E);
 chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E);

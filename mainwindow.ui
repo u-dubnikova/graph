@@ -57,6 +57,7 @@
     <addaction name="action_temp"/>
     <addaction name="action_report"/>
     <addaction name="action_clear"/>
+    <addaction name="action_mincycle"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -94,6 +95,11 @@
   <action name="action_clear">
    <property name="text">
     <string>О&amp;чистить</string>
+   </property>
+  </action>
+  <action name="action_mincycle">
+   <property name="text">
+    <string>&amp;Минимальная длина полуцикла</string>
    </property>
   </action>
  </widget>

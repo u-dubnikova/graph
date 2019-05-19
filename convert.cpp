@@ -172,7 +172,7 @@ int sign_change(double x,double y)
     return 0;	
 }
 
-void splitToHalf(Results & results)
+void splitToHalf(Results & results, unsigned minlen)
 {
     int hcn=0,hcs=1;
     std::vector<int> c_nums;
@@ -189,7 +189,7 @@ void splitToHalf(Results & results)
     for (size_t i=0;i<results.size();)
     {
 	size_t j,jmax;
-	for (j=jmax=i;j<results.size()-1 && (jmax-i<=10 || sign_change(results[j].sigma,results[j+1].sigma)!=hcs);j++)
+	for (j=jmax=i;j<results.size()-1 && ( ( jmax-i<=minlen && results[j].cycle != 0) || sign_change(results[j].sigma,results[j+1].sigma)!=hcs);j++)
 	    if (hcs*results[j].epsilon > hcs*results[jmax].epsilon )
 		jmax=j;
 	if (j == results.size() - 1)	
@@ -361,7 +361,7 @@ void removeDuplicates(Results & results)
 }
 
 
-void convertFile(const std::string& inputFileName, const std::string& outputFileName)
+void convertFile(const std::string& inputFileName, const std::string& outputFileName, unsigned minlen)
 {
     Results results;
     if (!readResults(inputFileName, results))
@@ -371,7 +371,7 @@ void convertFile(const std::string& inputFileName, const std::string& outputFile
     cutNearZero(results);
     transformResults(results);
     filterResults(results);
-    splitToHalf(results);
+    splitToHalf(results,minlen);
     removeLastEven(results);
     removeDuplicates(results);
     if (!printResults(outputFileName, results))

@@ -27,6 +27,7 @@ private slots:
     void setTemperature();
     void saveReport();
     void setDelta();
+    void setMinlen();
     void doClear();
 
 private:
@@ -39,6 +40,7 @@ private:
     Ui::MainWindow *ui;
     QCustomPlot* plot;
     double dEpsilon;
+    int minlen;
     struct ReportEntry
     {
 	QString FileName;

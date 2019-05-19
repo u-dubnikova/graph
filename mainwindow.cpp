@@ -29,9 +29,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->action_temp, SIGNAL(triggered()), this, SLOT(setTemperature()));
     connect(ui->action_report, SIGNAL(triggered()), this, SLOT(saveReport()));
     connect(ui->action_delta, SIGNAL(triggered()), this, SLOT(setDelta()));
+    connect(ui->action_mincycle, SIGNAL(triggered()), this, SLOT(setMinlen()));
     connect(ui->action_clear, SIGNAL(triggered()), this, SLOT(doClear()));
     dEpsilon = 0.0002;
-
+    minlen = 10;
 }
 
 MainWindow::~MainWindow()
@@ -393,7 +394,7 @@ void MainWindow::convertTriggered()
             outputFileName += ".alv";
         try
         {
-            convertFile(inputFileNames[0].toStdString(), outputFileName.toStdString());
+            convertFile(inputFileNames[0].toStdString(), outputFileName.toStdString(), minlen);
         }
         catch (std::runtime_error& e)
         {
@@ -411,7 +412,7 @@ void MainWindow::convertTriggered()
                QString outputFileName = inputInfo.absolutePath()+"/"+inputInfo.baseName()+".alv";
                try
                {
-                   convertFile(inputFileName.toStdString(), outputFileName.toStdString());
+                   convertFile(inputFileName.toStdString(), outputFileName.toStdString(),minlen);
                }
                catch (std::runtime_error& e)
                {
@@ -485,7 +486,7 @@ void MainWindow::setDelta()
                                      "Дельта:",
                                      dEpsilon*100,
                                      0,
-                                     0.03,
+                                     100,
                                      3,
                                      &bOk
                                     );
@@ -496,6 +497,24 @@ void MainWindow::setDelta()
     dEpsilon = delta/100;
 }
 
+void MainWindow::setMinlen()
+{
+    bool bOk;
+    int newlen = QInputDialog::getInt( this,
+                                     "Введите минимальную длину полуцикла",
+                                     "Минимальная длина полуцикла:",
+                                     minlen,
+                                     0,
+                                     100000,
+                                     1,
+                                     &bOk
+                                    );
+    if (!bOk || minlen < 0) {
+        // Была нажата кнопка Cancel
+        return;
+    }
+    minlen = newlen;
+}
 
 void MainWindow::saveReport() {
     QString fileName = QFileDialog::getSaveFileName(this,
