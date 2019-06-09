@@ -331,30 +331,37 @@ void MainWindow::paintGraph(const QString& filename)
     else if (filename.mid(filename.size()-4) == ".acc")
 	c = Qt::green;
     bool bOk;
+    int ini_cycle=results[0].cycle;
     int fin_cycle=results[results.size()-1].cycle;
-    int n0 = QInputDialog::getInt( this,
-                                     "Номер начального цикла",
-                                     "Начальный цикл:",
-                                     0,
-                                     0,
+    int n0=ini_cycle;
+    int n1=fin_cycle;
+    if (ini_cycle + 1 < fin_cycle)
+    {
+
+       n0 = QInputDialog::getInt( this,
+                                     "Номер начального полуцикла",
+                                     QString::asprintf("Начальный полуцикл (%d-%d)",ini_cycle,fin_cycle),
+                                     ini_cycle,
+                                     ini_cycle,
                                      fin_cycle,
                                      1,
                                      &bOk
                                     );
-    if (!bOk) {
-	n0=0;
-    }
-    int n1 = QInputDialog::getInt( this,
-                                     "Номер конечного цикла",
-                                     "Конечный цикл:",
-                                     fin_cycle,
-                                     n0,
-                                     fin_cycle,
-                                     1,
-                                     &bOk
-                                    );
-    if (!bOk) {
-	n1=fin_cycle;
+	if (!bOk) {
+	    n0=ini_cycle;
+	}
+	n1 = QInputDialog::getInt( this,
+					 "Номер конечного полуцикла",
+					 "Конечный полуцикл:",
+					 fin_cycle,
+					 n0,
+					 fin_cycle,
+					 1,
+					 &bOk
+					);
+	if (!bOk) {
+	    n1=fin_cycle;
+	}
     }
 
     size_t c0=0;
