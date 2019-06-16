@@ -6,7 +6,16 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <QVector>
 #include"result.h"
+
+struct RPT2Entry
+{
+    double temp;
+    int cycle;
+    double chi;
+    QVector<double> x,yorig,ycut;
+};
 
 struct chi
 {
@@ -14,13 +23,6 @@ struct chi
     double chi_orig;
     double chi_cut;
 }; 
-
-struct RPT2Entry
-{
-    double temp;
-    int cycle;
-    double chi;
-};
 
 void LQRPT2(const std::vector<RPT2Entry> & data, double & k, double & b);
 

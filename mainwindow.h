@@ -12,6 +12,8 @@ namespace Ui {
 class MainWindow;
 }
 
+
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -37,6 +39,7 @@ private:
     void paintRPT(const QString & filename);
     void paintGraph(const QString& filename);
     bool loadPrepared(std::vector<PreparedResult> & results,const QString &filename);
+    bool loadChi(const QString & filename, QVector<double> & x, QVector<double> & yorig, QVector<double> & ycut);
 
     Ui::MainWindow *ui;
     QCustomPlot* plot;

@@ -178,14 +178,16 @@ void MainWindow::paintGraph(std::vector<PreparedResult> & data, const QString& n
     graph->setPen(QPen(color));
 }
 
-void MainWindow::paintChi(const QString & filename)
+bool MainWindow::loadChi(const QString & filename, QVector<double> & x, QVector<double> & yorig, QVector<double> & ycut)
 {
-    QVector<double> yorig,ycut,x; 
+    x.clear();
+    yorig.clear();
+    ycut.clear();
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::information(this, "Error",
             "Unable to open file ");
-        return;
+        return false;
     }
     QTextStream in(&file);
     while (!in.atEnd())
@@ -195,7 +197,7 @@ void MainWindow::paintChi(const QString & filename)
         {
             QMessageBox::information(this, "Error",
                 "Unable to read file, maybe wrong format");
-            return;
+            return false;
         }
         in >> ncyc >>chiorig>>chicut;
         if (in.atEnd())
@@ -204,6 +206,14 @@ void MainWindow::paintChi(const QString & filename)
 	yorig.push_back(chiorig);
 	ycut.push_back(chicut);
     }
+    return true;
+}
+
+void MainWindow::paintChi(const QString & filename)
+{
+    QVector<double> yorig,ycut,x; 
+    if (!loadChi(filename,x,yorig,ycut))
+	return;
     auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
     graph->setData(x, yorig);
     graph->setName("Original");
@@ -296,13 +306,19 @@ void MainWindow::paintRPT2(const QString & filename)
 	{
 	    double chi, eps;
 	    int ncyc;
+	    QString chiname = str.mid(0,pos-3)+"chi";
 	    if (sscanf(str.mid(pos+2).toStdString().c_str(),"%d%lf%lf",&ncyc,&eps,&chi)!=3)
 	    {
 		QMessageBox::information(this, "Error",
 		    "invalid file format");
 		return;
 	    }
-	    RPT2Entry rp = { temp, ncyc+1, chi };
+	    RPT2Entry rp;
+	    rp.temp = temp;
+	    rp.cycle=ncyc+1;
+	    rp.chi = chi;
+	    if (!loadChi(chiname,rp.x,rp.yorig,rp.ycut))
+		return;
 	    entries.push_back(rp);
 	}
 	else
@@ -343,6 +359,10 @@ void MainWindow::paintRPT2(const QString & filename)
 	    max_cycle = r.cycle;
 	if (r.chi > max_chi )
 	    max_chi = r.chi;
+	auto graph2 = new QCPCurve(plot->xAxis, plot->yAxis);
+	graph2->setData(r.x, r.ycut);
+	graph2->removeFromLegend();
+	graph2->setPen(QPen(getMyColor(cur_num)));
     }
     QCPGraph * gr = new QCPGraph(plot->xAxis, plot->yAxis);
     gr->setAdaptiveSampling(false);
@@ -368,7 +388,7 @@ void MainWindow::paintRPT2(const QString & filename)
     //snprintf(buffer,256,"reg: y = %lf*x^%lf",exp(b),k);
 
     graph->setName(buffer);
-    graph->setPen(QPen(Qt::black));
+    graph->setPen(QPen(QBrush(Qt::black),1,Qt::DashLine));
     plot->xAxis->setLabel("n [-]");
     plot->yAxis->setLabel("Chi [%]");
     plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
