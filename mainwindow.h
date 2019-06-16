@@ -34,6 +34,7 @@ private:
     void paintGraph(std::vector<PreparedResult> & data, const QString& name, QColor color);
     void paintChi(const QString & filename);
     void paintRPT2(const QString & filename);
+    void paintRPT(const QString & filename);
     void paintGraph(const QString& filename);
     bool loadPrepared(std::vector<PreparedResult> & results,const QString &filename);
 
@@ -49,8 +50,14 @@ private:
 	double E,S;
 	std::vector<PreparedResult> results;
     };
+    struct SavedReport
+    {
+	double temp;
+	std::vector<PreparedResult> avCurve;
+    };
     std::multimap<double,ReportEntry> report;
     std::set<double> temps;
+    bool loadReport(std::vector<SavedReport> & rep, const QString & filename);
 };
 
 #endif // MAINWINDOW_H

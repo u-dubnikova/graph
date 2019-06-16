@@ -44,7 +44,7 @@ void MainWindow::openTriggered()
 {
     auto fileName = QFileDialog::getOpenFileName(this,
                                                  "Open file with results", "",
-                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;Chi reports (*.rpt2);;All Files (*)");
+                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;Reports (*.rpt);;Chi reports (*.rpt2);;All Files (*)");
     if (fileName.isEmpty())
            return;
 
@@ -74,6 +74,69 @@ bool MainWindow::loadPrepared(std::vector<PreparedResult> & results,const QStrin
         if (!in.atEnd())
             results.push_back(result);
     }
+    return true;
+}
+
+bool MainWindow::loadReport(std::vector<SavedReport> & rep, const QString & filename)
+{
+    rep.clear();
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(this, "Error",
+            "Unable to open file ");
+        return false;
+    }
+    QTextStream in(&file);
+    enum {NONE,TEMP,CURVE} state = NONE;
+    SavedReport r;
+    while (!in.atEnd())
+    {
+	QString str = in.readLine();
+	switch (state)
+	{
+	    case NONE:
+		if (!str.contains("Temperature:"))
+		    break;
+		if (sscanf(str.mid(str.indexOf(":")+1).toStdString().c_str(),"%lf",&r.temp) != 1)
+		    return false;
+		state = TEMP;
+		break;
+	    case TEMP:
+		if (str.contains("Temperature:"))
+		{
+		    if (sscanf(str.mid(str.indexOf(":")+1).toStdString().c_str(),"%lf",&r.temp) != 1)
+			return false;
+		    break;
+		}
+		if (str == "Average curve:")
+		    state =  CURVE;
+		break;
+	    case CURVE:
+		PreparedResult pr;
+		if (sscanf(str.toStdString().c_str(),"%lf%lf",&pr.sigma,&pr.epsilon) == 2)
+		{
+		    pr.cycle=0;
+		    r.avCurve.push_back(pr);
+		    break;
+		}
+		if (r.avCurve.size() != 0)
+		{
+		    rep.push_back(r);
+		    r.avCurve.clear();
+		}
+		if (str.contains("Temperature:"))
+		{
+		    if (sscanf(str.mid(str.indexOf(":")+1).toStdString().c_str(),"%lf",&r.temp) != 1)
+			return false;
+		    state = TEMP;
+		    break;
+		}
+		state = NONE;
+	}
+    }
+    if (in.atEnd() && state == CURVE && r.avCurve.size() != 0)
+	rep.push_back(r);
+
     return true;
 }
 
@@ -181,6 +244,29 @@ static QColor getMyColor(int nres)
     }
 }
 
+
+void MainWindow::paintRPT(const QString & filename)
+{
+    std::vector<SavedReport> rep;
+    if (!loadReport(rep,filename))
+	return;
+    plot->clearPlottables();
+    for (size_t ntemp=0;ntemp<rep.size();ntemp++)
+    {
+	std::vector<PreparedResult> paintRes;
+	paintRes.push_back(PreparedResult(0,0,0));
+	BEZ<20> b11(rep[ntemp].avCurve);
+
+	for (int i=0;i<=100;i++)
+	{
+	    BEZ<20>::point p=b11((double)i/100);
+	    paintRes.push_back(PreparedResult(0,p.y,p.x));
+	}
+	paintGraph(paintRes,"Температура: "+QString::number(rep[ntemp].temp), getMyColor(ntemp)); 
+    }
+    plot->rescaleAxes();
+    plot->replot();
+}
 
 void MainWindow::paintRPT2(const QString & filename)
 {
@@ -315,6 +401,12 @@ void MainWindow::paintGraph(const QString& filename)
     if (filename.mid(filename.size()-5) == ".rpt2")
     {
 	paintRPT2(filename);
+	return;
+    }
+
+    if (filename.mid(filename.size()-4) == ".rpt")
+    {
+	paintRPT(filename);
 	return;
     }
 
@@ -652,13 +744,13 @@ void MainWindow::saveReport() {
 	out<<"Average curve:"<<'\n';
 	for (size_t i=1;i<avResults.size();i++)
 	    out<<avResults[i].sigma<<'\t'<<avResults[i].epsilon<<'\n';
-	std::vector<PreparedResult> paintRes(10*10+1);
+	std::vector<PreparedResult> paintRes;
 	paintRes.push_back(PreparedResult(0,0,0));
-	BEZ<21> b11(avResults);
+	BEZ<20> b11(avResults);
 
 	for (int i=0;i<=100;i++)
 	{
-	    BEZ<21>::point p=b11((double)i/100);
+	    BEZ<20>::point p=b11((double)i/100);
 	    paintRes.push_back(PreparedResult(0,p.y,p.x));
 	}
 	paintGraph(paintRes,"Температура: "+QString::number(temp),getMyColor   (ntemp)); 
