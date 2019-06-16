@@ -517,13 +517,22 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
     chi ch={cnum,cum_chi_orig,cum_chi_cut};
     Chis.push_back(ch);
     std::vector<chi> ChiNew(Chis.size());
+    std::vector<chi> ChiDelta(Chis.size()-1);
     ChiNew[0]=Chis[0];
+
     for (size_t i = 1;i< Chis.size(); i++)
+    {
 	ChiNew[i] = {
 	    Chis[i].cycle,
 	    Chis[i].chi_orig+Chis[i-1].chi_orig,
 	    Chis[i].chi_cut+Chis[i-1].chi_cut
 	};
+	ChiDelta[i-1]= {
+	    ChiNew[i].cycle,
+	    ChiNew[i].chi_orig-ChiNew[i-1].chi_orig,
+	    ChiNew[i].chi_cut-ChiNew[i-1].chi_cut
+	};
+    }
 
     std::ofstream ofs(FileName);
     if (!ofs)
@@ -536,6 +545,17 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
 //    for (const auto& res : Chis)
     for (const auto& res : ChiNew)
         ofs << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
+
+    std::ofstream ofsdelta(FileName+".delta");
+    if (!ofsdelta)
+    {
+	std::cout<<"Cannot open "<<FileName<<std::endl;
+        return ChiNew[ChiNew.size()-1];
+    }
+
+    for (const auto& res : ChiDelta)
+        ofsdelta << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
+
     return ChiNew[ChiNew.size()-1];
 }
 static inline double sqr(double x)
