@@ -432,14 +432,29 @@ void MainWindow::paintGraph(const QString& filename)
 
 
     std::vector<PreparedResult> results;
+    QString origfilename;
+    std::vector<PreparedResult> origresults;
     if (!loadPrepared(results,filename))
     {
         plot->replot();
         return;
     }
     QColor c=Qt::blue;
+    bool PaintOrig = false;
     if (filename.mid(filename.size()-4) == ".acv")
+    {
+
+	if (QMessageBox::question(this,"Строить ли оригинал","Нужно ли строить исходную кривую?",QMessageBox::Yes|QMessageBox::No,QMessageBox::No) == QMessageBox::Yes)
+	{
+	    PaintOrig = true; 
+	    origfilename = filename.mid(0,filename.size()-4)+".alv";
+	    if (!loadPrepared(origresults,origfilename))
+	    {
+		PaintOrig = false;
+	    }
+	}
 	c = Qt::red;
+    }
     else if (filename.mid(filename.size()-4) == ".acc")
 	c = Qt::green;
     bool bOk;
@@ -476,6 +491,7 @@ void MainWindow::paintGraph(const QString& filename)
 	}
     }
 
+
     size_t c0=0;
     while (c0 < results.size() && results[c0].cycle < n0 )
 	c0++;
@@ -484,8 +500,20 @@ void MainWindow::paintGraph(const QString& filename)
 	c1++;
     results.erase(results.begin()+c1,results.end());
     results.erase(results.begin(),results.begin()+c0);
-	
+    if (PaintOrig)
+    {
+	while (c0 < origresults.size() && origresults[c0].cycle < n0 )
+	    c0++;
+	c1=c0;
+	while (c1 < origresults.size() && origresults[c1].cycle <= n1 )
+	    c1++;
+	origresults.erase(origresults.begin()+c1,origresults.end());
+	origresults.erase(origresults.begin(),origresults.begin()+c0);
+	paintGraph(origresults,origfilename, Qt::blue);
+    }
+
     paintGraph(results,filename, c);
+
     plot->rescaleAxes();
     plot->replot();
 }
