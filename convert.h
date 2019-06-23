@@ -49,7 +49,7 @@ public:
     double tch,ych;
     BEZ(std::vector<PreparedResult> & avRes)
     {
-	double tch1;
+	double tch1 = 0;
 	for (int i=0;i<n;i++)
 	{
 	    points[i].x=avRes[i].epsilon;
