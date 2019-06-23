@@ -270,6 +270,8 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
     }
    std::cout<<"SIGMA_0="<<sig_0<<",EPSILON_0="<<eps_0<<std::endl;
    std::cout<<"E_0="<<E_0<<std::endl;
+    if (E_0 < 40. )
+	return false;
     size_t i_s;
 
     for (i_s=1;i_s<results.size() && results[i_s].cycle == 0 && results[i_s].sigma>= E_0*(results[i_s].epsilon-dEps);i_s++) 
@@ -278,6 +280,8 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
 	return false;
     sig_1 = get_sigma(results[i_s-1],results[i_s],E_0,dEps);
     std::cout<<"Sigma_1="<<sig_1<<std::endl;
+    if (sig_1 < 0.1)
+	return false;
 /* 
  * regression: s=ke+b+u
  * k, b - obvious
