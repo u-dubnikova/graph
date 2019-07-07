@@ -444,12 +444,15 @@ double intersect(const PreparedResult& r1, const PreparedResult & r2)
 {
 //    std::cout<<r1.sigma<<'\t'<<r2.sigma<<'\n';
     double res=(r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
+#if 0
     if (fabs(res)>0.05)
     {
 	std::cout<<"c1="<<r1.cycle<<",c2="<<r2.cycle;
 	std::cout<<",e1="<<r1.epsilon<<",e2="<<r2.epsilon;
-	std::cout<<",s1="<<r1.sigma<<",s2="<<r2.sigma<<'\n';
+	std::cout<<",s1="<<r1.sigma<<",s2="<<r2.sigma;
+	std::cout<<",res="<<res<<'\n';
     }
+#endif
     return res;
 }
 double av(double i, double nstart, double nfinish, double xstart, double xfinish)
@@ -457,69 +460,74 @@ double av(double i, double nstart, double nfinish, double xstart, double xfinish
     double t=(i-nstart)/(nfinish-nstart);
     return (1-t)*xstart+t*xfinish;
 }
-chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
+
+
+struct chi1 
 {
-    const double mul=1;//sqrt(3.)/2.;
-    std::vector<chi> Chis;
+    int cycle;
+    double chi;
+};
+
+void makeChi1(const std::vector<PreparedResult> & data, double E, double mul, std::vector<chi1> & res)
+{
+    res.clear();
     int cnum = 0,save_cycle=-1;
-    size_t norig=0,ncut=0;
-    double save_chi_orig=0,save_chi_cut=0;
-    double cum_chi_orig=0,cum_chi_cut=0;
-    while (norig<orig.size() && ncut<cut.size())
+    size_t n=0;
+    double save_chi=0;
+    double cum_chi=0;;
+    while (n<data.size())
     {
-	double cur_chi_orig, cur_chi_cut;
-	double inter_orig,inter_cut;
-	while (norig <orig.size() && orig[norig].cycle == cnum)
-	    norig++;
-	while (ncut <cut.size() && cut[ncut].cycle == cnum)
-	    ncut++;
-	if (norig >= orig.size()-1 || ncut >= cut.size()-1 )
+	double cur_chi;
+	double inter;
+	while (n <data.size() && data[n].cycle == cnum)
+	    n++;
+	if (n >= data.size()-1)
 	    break;
-	cnum = orig[norig].cycle;
-	if (cut[ncut].cycle != cnum)
-	    std::cout<<FileName<<":cut cnum="<<cut[ncut].cycle<<"!="<<cnum<<std::endl;
-	while (norig+2 < orig.size() && sign_change(orig[norig].sigma,orig[norig+1].sigma) == 0)
-	    norig++;
-	while (ncut+2 < cut.size() && sign_change(cut[ncut].sigma,cut[ncut+1].sigma) == 0)
-	    ncut++;
-	assert(norig+1<orig.size());
-	assert(ncut+1<cut.size());
-	if (norig+1 < orig.size())
-	    cur_chi_orig=mul*fabs(inter_orig=intersect(orig[norig],orig[norig+1]));
-	if (ncut+1 < cut.size())
-	    cur_chi_cut=mul*fabs(inter_cut=intersect(cut[ncut],cut[ncut+1]));
-	if (norig+1 <orig.size() && ncut+1< cut.size() && fabs(inter_cut) >fabs(inter_orig ) )
-	{
-	    std::cout<<FileName<<":cnum="<<cnum<<",int_orig="<<inter_orig<<", int_cut="<<inter_cut<<std::endl;
-	}
+	cnum = data[n].cycle;
+	while (n+2 < data.size() && sign_change(data[n].sigma,data[n+1].sigma) == 0)
+	    n++;
+	assert(n+1<data.size());
+	std::cout<<"n="<<std::endl;
+	if (n+1 < data.size())
+	    cur_chi=mul*fabs(inter=intersect(data[n],data[n+1]));
 	
 	if (save_cycle != -1)
 	{
 	    for (int i=save_cycle+1;i < cnum;i++)
 	    {
-#if 0
-	    	cum_chi_orig+=save_chi_orig+(double)(i-save_cycle)/(cnum-save_cycle)*(cur_chi_orig-save_chi_orig);
-	    	cum_chi_cut+=save_chi_cut+(double)(i-save_cycle)/(cnum-save_cycle)*(cur_chi_cut-save_chi_cut);
-#else
-		cum_chi_orig+=av(i,save_cycle,cnum,save_chi_orig,cur_chi_orig);
-		cum_chi_cut+=av(i,save_cycle,cnum,save_chi_cut,cur_chi_cut);
-#endif
-		chi ch={i-1, cum_chi_orig,cum_chi_cut};
-		Chis.push_back(ch);
+		cum_chi+=av(i,save_cycle,cnum,save_chi,cur_chi);
+		chi1 ch={i-1, cum_chi};
+		res.push_back(ch);
 	    }
 	}
-	cum_chi_orig+=cur_chi_orig;
-	cum_chi_cut+=cur_chi_cut;
-	chi ch={cnum-1, cum_chi_orig,cum_chi_cut};
-	Chis.push_back(ch);
+	cum_chi+=cur_chi;
+	chi1 ch={cnum-1, cum_chi};
+	res.push_back(ch);
 	save_cycle=cnum;
-	save_chi_orig=cur_chi_orig;
-	save_chi_cut=cur_chi_cut;
+	save_chi=cur_chi;
     }
-    cum_chi_orig+=mul*fabs(orig[orig.size()-1].epsilon-orig[orig.size()-1].sigma/E);
-    cum_chi_cut+=mul*fabs(cut[cut.size()-1].epsilon-cut[cut.size()-1].sigma/E);
-    chi ch={cnum,cum_chi_orig,cum_chi_cut};
-    Chis.push_back(ch);
+    cum_chi+=mul*fabs(data[data.size()-1].epsilon-data[data.size()-1].sigma/E);
+    chi1 ch={cnum,cum_chi};
+    res.push_back(ch);
+}
+
+chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E)
+{
+    const double mul=1;//sqrt(3.)/2.;
+    std::vector<chi> Chis;
+    std::vector<chi1> res_orig,res_cut;
+    makeChi1(orig,E,mul,res_orig);
+    makeChi1(cut,E,mul,res_cut);
+    size_t norig=0,ncut=0;
+    for (;norig<res_orig.size() && ncut <res_cut.size();norig++,ncut++)
+    {
+	if (res_orig[norig].cycle != res_cut[ncut].cycle )
+	{
+	    std::cout<<"Cycle mismatch: orig="<<res_orig[norig].cycle<<"res_cut="<<res_cut[ncut].cycle;
+	}
+	chi ch={res_orig[norig].cycle, res_orig[norig].chi, res_cut[ncut].chi};
+	Chis.push_back(ch);
+    }
     std::vector<chi> ChiNew(Chis.size());
     std::vector<chi> ChiDelta(Chis.size()-1);
     ChiNew[0]=Chis[0];
