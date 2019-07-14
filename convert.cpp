@@ -486,10 +486,8 @@ void makeChi1(const std::vector<PreparedResult> & data, double E, double mul, st
 	cnum = data[n].cycle;
 	while (n+2 < data.size() && sign_change(data[n].sigma,data[n+1].sigma) == 0)
 	    n++;
-	assert(n+1<data.size());
-	std::cout<<"n="<<std::endl;
-	if (n+1 < data.size())
-	    cur_chi=mul*fabs(inter=intersect(data[n],data[n+1]));
+	cur_chi=mul*fabs(inter=intersect(data[n],data[n+1]));
+	n++;
 	
 	if (save_cycle != -1)
 	{
