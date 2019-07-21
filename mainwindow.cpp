@@ -620,7 +620,12 @@ void MainWindow::setTemperature() {
         if (!loadPrepared(re.results,fname))
             continue;
 	re.FileName = fname;
-	re.valid=findElas(re.results,dEpsilon,re.E,re.S,re.approx_good);
+	epsig ep;
+	if ((re.valid=findElas(re.results,dEpsilon,re.E,ep,re.approx_good)))
+	{
+	    re.eps = ep.first;
+	    re.S = ep.second;
+	}
 	report.emplace(temp,re);
     }
     temps.emplace(temp);

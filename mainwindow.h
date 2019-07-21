@@ -50,7 +50,7 @@ private:
 	QString FileName;
 	bool valid;
 	bool approx_good;
-	double E,S;
+	double eps,E,S;
 	std::vector<PreparedResult> results;
     };
     struct SavedReport

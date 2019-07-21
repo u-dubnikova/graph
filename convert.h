@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iostream>
 #include <QVector>
+#include <utility>
 #include"result.h"
 
 struct RPT2Entry
@@ -31,8 +32,10 @@ void SaveCutResults(
     const std::vector<PreparedResult> & src,
     double E2, double delta);
 
+using epsig = std::pair<double,double>;
+
 void convertFile(const std::string& inputFileName, const std::string& outputFileName, unsigned minlen);
-bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1,bool & approx_good);
+bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1,bool & approx_good);
 double findSigma2(std::vector<PreparedResult> & results, double dEps, double E);
 chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E);
 

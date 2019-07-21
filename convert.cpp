@@ -221,17 +221,19 @@ bool printResults(const std::string& filename, const Results& results)
 constexpr double bad_E0 = 250;
 constexpr double bad_s1 = 0.65;
 
-static double get_sigma(const PreparedResult & p0, const PreparedResult &p1, double E, double dEps)
+static epsig get_epsigma(const PreparedResult & p0, const PreparedResult &p1, double E, double dEps)
 {
     double e1=p1.epsilon, e0=p0.epsilon;
     double s1=p1.sigma, s0=p0.sigma;
     double ds=s1-s0;
     double de=e1-e0;
     double E1=ds/de;
-    return (s0-E1*(e0-dEps))/(1-E1/E);
+    double ret_sigma=(s0-E1*(e0-dEps))/(1-E1/E);
+    double ret_eps=ret_sigma/E+dEps;
+    return epsig(ret_eps,ret_sigma);
 }
 
-bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,double & sig_1, bool & approx_good)
+bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1, bool & approx_good)
 {
     double s1=results[0].sigma*results[0].epsilon;
     double s2=results[0].epsilon*results[0].epsilon;
@@ -278,9 +280,9 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,do
 	;
     if (i_s>=results.size() || results[i_s].cycle != 0)
 	return false;
-    sig_1 = get_sigma(results[i_s-1],results[i_s],E_0,dEps);
-    std::cout<<"Sigma_1="<<sig_1<<std::endl;
-    if (sig_1 < 0.1)
+    epsig_1 = get_epsigma(results[i_s-1],results[i_s],E_0,dEps);
+    std::cout<<"Sigma_1="<<epsig_1.second<<std::endl;
+    if (epsig_1.second < 0.1)
 	return false;
 /* 
  * regression: s=ke+b+u
@@ -336,7 +338,7 @@ double findSigma2(std::vector<PreparedResult> & results, double dEps, double E)
 	;
 //    if (i_s == results.size())
 //	std::cout<<"NO INTERSECTION!!!!"<<std::endl;
-    return get_sigma(results[i_s-1],results[i_s],E,dEps);    	
+    return get_epsigma(results[i_s-1],results[i_s],E,dEps).second;    	
 }
 
 void removeLastEven(Results & results)
@@ -486,6 +488,8 @@ void makeChi1(const std::vector<PreparedResult> & data, double E, double mul, st
 	cnum = data[n].cycle;
 	while (n+2 < data.size() && sign_change(data[n].sigma,data[n+1].sigma) == 0)
 	    n++;
+	if (data.size() == n+2)
+	    break;
 	cur_chi=mul*fabs(inter=intersect(data[n],data[n+1]));
 	n++;
 	
