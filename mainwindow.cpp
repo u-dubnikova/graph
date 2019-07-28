@@ -627,6 +627,8 @@ void MainWindow::setTemperature() {
 	    re.S = ep.second;
 	}
 	report.emplace(temp,re);
+
+	saveEE((fname.mid(0,fname.size()-4)+".eee").toStdString(),re.results);
     }
     temps.emplace(temp);
 }
