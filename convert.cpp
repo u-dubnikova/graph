@@ -291,11 +291,24 @@ PreparedResult transform_res(const PreparedResult & x, const PreparedResult & x0
     return PreparedResult(0,sgn*(x.sigma-x0.sigma),sgn*(x.epsilon-x0.epsilon));
 }
 
+
 double get_EN(const std::vector<PreparedResult> & results, size_t & idx)
 {
     int cnum = results[idx].cycle;
-    const PreparedResult & x0 = results[idx];
     std::vector<PreparedResult> v2;
+    if (cnum != 0)
+    {
+	size_t idx_end;
+	for (idx_end=idx;idx_end < results.size() && results[idx_end].cycle == cnum;idx_end++)
+	    ;
+	int s=2*(cnum%2)-1;
+	while (--idx_end >= idx)
+	    if (s*results[idx_end].sigma > 0)
+		break;
+	idx = idx_end+1;
+    }
+    const PreparedResult & x0 = results[idx];
+
     for (idx++;idx < results.size() && results[idx].cycle == cnum;idx++)
 	v2.push_back(transform_res(results[idx],x0,cnum));
     double res=get_E0(v2);
