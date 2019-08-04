@@ -109,7 +109,10 @@ bool MainWindow::loadReport(std::vector<SavedReport> & rep, const QString & file
 		    break;
 		}
 		if (str == "Average curve:")
+		{
 		    state =  CURVE;
+		    r.avCurve.push_back(PreparedResult(0,0,0));
+		}
 		break;
 	    case CURVE:
 		PreparedResult pr;
