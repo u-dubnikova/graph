@@ -238,6 +238,8 @@ double get_E0(std::vector<PreparedResult> & results)
     double s1,s2;    
     double s,sp,d,dp,sig_0,eps_0;
     size_t i=0,i0;
+    if (results.size() == 0)
+	return NAN;
     while (results[i].epsilon == 0) 
 	i++;
     s1=results[i].sigma*results[i].epsilon;
