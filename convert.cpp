@@ -7,6 +7,8 @@
 #include <qmath.h>
 #include <assert.h>
 
+constexpr double BAD_E = -INFINITY;
+
 struct Result
 {
     int cycle = 0;
@@ -239,7 +241,7 @@ double get_E0(std::vector<PreparedResult> & results)
     double s,sp,d,dp,sig_0,eps_0;
     size_t i=0,i0;
     if (results.size() == 0)
-	return NAN;
+	return BAD_E;
     while (results[i].epsilon == 0) 
 	i++;
     s1=results[i].sigma*results[i].epsilon;
@@ -251,7 +253,7 @@ double get_E0(std::vector<PreparedResult> & results)
     if ( i>= results.size() || results[i].cycle != 0 )
     {
 	printf("HOLY SHIT\n");
-	return NAN;
+	return BAD_E;
     }
     s1+=results[i].sigma*results[i].epsilon;
     s2+=results[i].epsilon*results[i].epsilon;
@@ -324,26 +326,115 @@ double get_EN(const std::vector<PreparedResult> & results, size_t & idx)
     return res;
 }
 
+struct edata 
+{
+    int cnum;
+    double e;
+    edata(int cnum_=0,double e_=BAD_E):cnum(cnum_),e(e_)
+    {
+    };
+};
+
+void FixEE(std::vector<edata> & data)
+{
+    std::vector<edata> rdata;
+    bool modified=false;
+    size_t nres = 0;
+    double k,b;
+    double max_cnum=data[data.size()-1].cnum;
+
+    do
+    {
+	for (const auto & x: data)
+	    printf("%d\t%lf\n",x.cnum,x.e);
+        double sumc=0,sumcsq=0,sume=0,sumce=0;
+	modified = false;
+	double emin = data[0].e, emax=data[0].e;
+	for (const auto & x: data)
+	{
+	    if (x.e == BAD_E)
+		continue;
+	    if (x.e < emin)
+		emin = x.e;
+	    if (x.e > emax)
+		emax = x.e;
+	    double lc=log(x.cnum+max_cnum);
+	    nres++;
+#if 0
+	    sumc+=x.cnum;
+	    sumcsq+=((double)x.cnum)*x.cnum;
+	    sume+=x.e;
+	    sumce+=x.cnum*x.e;
+#else
+	    sumc+=lc;
+	    sumcsq+=lc*lc;
+	    sume+=x.e;
+	    sumce+=lc*x.e;
+#endif
+	}
+	sumc/=nres;
+	sumcsq/=nres;
+	sume/=nres;
+	sumce/=nres;
+	k=(sumce-sumc*sume)/(sumcsq-sumc*sumc);
+	b=sume-k*sumc;
+	printf("emin=%lf, emax=%lf\n",emin, emax);
+	printf("k=%lf,b=%lf\n",k,b);
+	printf("E[1]=%lf,E[last]=%lf\n",data[1].e,data[data.size()-1].e);
+	for (size_t i = 1;i<data.size();i++)
+	{
+	    if (data[i].e == BAD_E)
+		continue;
+	    double calc_e = k*log(data[i].cnum+max_cnum)+b;
+	    if (fabs(data[i].e-calc_e)>0.3*fabs(calc_e))
+	    {
+		modified = true;
+		data[i].e = BAD_E;
+	    }
+	    
+	}
+//	printf("k=%lf\n,b=%lf\n",k,b);
+    } 
+    while (modified);
+
+    for (const auto & x: data)
+	printf("%d\t%lf\n",x.cnum,x.e);
+
+    for (auto & x: data)
+	if (x.e == BAD_E)
+	    x.e = k*log(x.cnum+max_cnum)+b; 
+}
+
 void saveEE(const std::string & FileName, const std::vector<PreparedResult>& results)
 {
     std::ofstream f(FileName);
     size_t idx=0;
     double eprev=0;
+    std::vector<edata> ES;
+
     do
     {
 	int cnum=results[idx].cycle;
-	double EN=get_EN(results,idx);
-	f<<cnum<<"\t"<<EN<<"\t"<<EN-eprev<<std::endl;
-	eprev = EN;
+	ES.push_back(edata(cnum,get_EN(results,idx)));
     }
     while (idx<results.size());
+    if (ES.size() == 0)
+	return;
+    FixEE(ES);
+    eprev = ES[0].e;
+    for (idx=0;idx<ES.size();idx++)
+    {
+	double EN=ES[idx].e;
+	f<<ES[idx].cnum<<"\t"<<EN<<"\t"<<EN-eprev<<std::endl;
+	eprev = EN;
+    }
 }
 
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1, bool & approx_good)
 {
    E_0=get_E0(results);
    std::cout<<"E_0="<<E_0<<std::endl;
-    if ( E_0 == NAN || E_0 < 40. )
+    if ( E_0 == BAD_E || E_0 < 40. )
 	return false;
     size_t i_s;
 
