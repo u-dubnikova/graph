@@ -33,6 +33,7 @@ void SaveCutResults(
     double E2, double delta);
 
 using epsig = std::pair<double,double>;
+using esig = std::pair<double,double>;
 
 void convertFile(const std::string& inputFileName, const std::string& outputFileName, unsigned minlen);
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1,bool & approx_good);

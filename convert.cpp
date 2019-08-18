@@ -235,13 +235,13 @@ static epsig get_epsigma(const PreparedResult & p0, const PreparedResult &p1, do
     return epsig(ret_eps,ret_sigma);
 }
 
-double get_E0(std::vector<PreparedResult> & results)
+esig get_E0(std::vector<PreparedResult> & results)
 {
     double s1,s2;    
     double s,sp,d,dp,sig_0,eps_0;
     size_t i=0,i0;
     if (results.size() == 0)
-	return BAD_E;
+	return esig(BAD_E,BAD_E);
     while (results[i].epsilon == 0) 
 	i++;
     s1=results[i].sigma*results[i].epsilon;
@@ -253,7 +253,7 @@ double get_E0(std::vector<PreparedResult> & results)
     if ( i>= results.size() || results[i].cycle != 0 )
     {
 	printf("HOLY SHIT\n");
-	return BAD_E;
+	return esig(BAD_E,BAD_E);
     }
     s1+=results[i].sigma*results[i].epsilon;
     s2+=results[i].epsilon*results[i].epsilon;
@@ -283,10 +283,10 @@ double get_E0(std::vector<PreparedResult> & results)
 		    printf("d=%lf,dp=%lf,eps=%lf,epsp=%lf\n",d,dp,eps,epsp);
 		    printf("sig_0=%lf,eps0=%lf,res=%lf\n",sig_0,eps_0,res);
 	    }
-	    return res;
+	    return esig(res,sig_0);
 	}
     }
-    return results[i-1].sigma/results[i-1].epsilon;
+    return esig(results[i-1].sigma/results[i-1].epsilon,results[i-1].sigma);
 }
 
 PreparedResult transform_res(const PreparedResult & x, const PreparedResult & x0, size_t cnum)
@@ -295,8 +295,7 @@ PreparedResult transform_res(const PreparedResult & x, const PreparedResult & x0
     return PreparedResult(0,sgn*(x.sigma-x0.sigma),sgn*(x.epsilon-x0.epsilon));
 }
 
-
-double get_EN(const std::vector<PreparedResult> & results, size_t & idx)
+esig get_EN(const std::vector<PreparedResult> & results, size_t & idx)
 {
     int cnum = results[idx].cycle;
     std::vector<PreparedResult> v2;
@@ -315,22 +314,23 @@ double get_EN(const std::vector<PreparedResult> & results, size_t & idx)
 
     for (idx++;idx < results.size() && results[idx].cycle == cnum;idx++)
 	v2.push_back(transform_res(results[idx],x0,cnum));
-    double res=get_E0(v2);
-    if (res < 0)
+    esig es=get_E0(v2);
+    if (es.first < 0)
     {
-	printf("res=%lf",res);
+	printf("res=%lf",es.first);
 	for (const auto & it:v2)
 	    printf(",(%lf;%lf)",it.sigma,it.epsilon);
 	printf("\n");
     }
-    return res;
+    return es;
 }
 
 struct edata 
 {
     int cnum;
     double e;
-    edata(int cnum_=0,double e_=BAD_E):cnum(cnum_),e(e_)
+    double sigma;
+    edata(int cnum_=0,double e_=BAD_E,double sigma_ = 0):cnum(cnum_),e(e_),sigma(sigma_)
     {
     };
 };
@@ -407,7 +407,8 @@ void FixEE(std::vector<edata> & data)
 
 void saveEE(const std::string & FileName, const std::vector<PreparedResult>& results)
 {
-    std::ofstream f(FileName);
+    std::ofstream f(FileName+".eee");
+    std::ofstream fs(FileName+".sss");
     size_t idx=0;
     double eprev=0;
     std::vector<edata> ES;
@@ -415,7 +416,8 @@ void saveEE(const std::string & FileName, const std::vector<PreparedResult>& res
     do
     {
 	int cnum=results[idx].cycle;
-	ES.push_back(edata(cnum,get_EN(results,idx)));
+	esig es=get_EN(results,idx);
+	ES.push_back(edata(cnum,es.first,es.second));
     }
     while (idx<results.size());
     if (ES.size() == 0)
@@ -426,13 +428,14 @@ void saveEE(const std::string & FileName, const std::vector<PreparedResult>& res
     {
 	double EN=ES[idx].e;
 	f<<ES[idx].cnum<<"\t"<<EN<<"\t"<<EN-eprev<<std::endl;
+	fs<<ES[idx].cnum<<"\t"<<ES[idx].sigma<<std::endl;
 	eprev = EN;
     }
 }
 
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1, bool & approx_good)
 {
-   E_0=get_E0(results);
+   E_0=get_E0(results).first;
    std::cout<<"E_0="<<E_0<<std::endl;
     if ( E_0 == BAD_E || E_0 < 40. )
 	return false;
