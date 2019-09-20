@@ -44,7 +44,7 @@ void MainWindow::openTriggered()
 {
     auto fileName = QFileDialog::getOpenFileName(this,
                                                  "Open file with results", "",
-                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;Reports (*.rpt);;Chi reports (*.rpt2);;All Files (*)");
+                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;Reports (*.rpt);;Chi reports (*.rpt2);;E (*.eee);;Sigma (*.sss);;All Files (*)");
     if (fileName.isEmpty())
            return;
 
@@ -212,6 +212,7 @@ bool MainWindow::loadChi(const QString & filename, QVector<double> & x, QVector<
     return true;
 }
 
+
 void MainWindow::paintChi(const QString & filename)
 {
     QVector<double> yorig,ycut,x; 
@@ -244,6 +245,72 @@ void MainWindow::paintChi(const QString & filename)
     plot->replot();
 }
 
+bool MainWindow::loadES(const QString & filename, QVector<double> & xeven, QVector<double> & yeven, QVector<double> & xodd,QVector<double> & yodd)
+{
+    xeven.clear();
+    yeven.clear();
+    xodd.clear();
+    yodd.clear();
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(this, "Error",
+            "Unable to open file ");
+        return false;
+    }
+    QTextStream in(&file);
+    while (!in.atEnd())
+    {
+	int n;
+	double y,dy;
+        if (in.status() != QTextStream::Ok)
+        {
+            QMessageBox::information(this, "Error",
+                "Unable to read file, maybe wrong format");
+            return false;
+        }
+        in >> n >> y >> dy;
+        if (in.atEnd())
+	    break;
+	if (n%2)
+	{
+	    xodd.push_back(n+1);
+	    yodd.push_back(y);
+	}
+	else
+	{
+	    xeven.push_back(n+1);
+	    yeven.push_back(y);
+	}
+    }
+    return true;
+}
+
+void MainWindow::paintES(const QString & filename)
+{
+    QVector<double> yeven,yodd,xeven,xodd; 
+    if (!loadES(filename,xeven,yeven,xodd,yodd))
+	return;
+    auto graph = new QCPCurve(plot->xAxis, plot->yAxis);
+    graph->setData(xeven, yeven);
+    graph->setName("Even");
+    graph->setPen(QPen(Qt::blue));
+    auto graph2 = new QCPCurve(plot->xAxis, plot->yAxis);
+    graph2->setData(xodd, yodd);
+    graph2->setName("Odd");
+    graph2->setPen(QPen(Qt::red));
+    plot->xAxis->setLabel("n [-]");
+    plot->yAxis->setLabel("BBAABABBABABA");
+    plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+    QSharedPointer<QCPAxisTickerLog> xtick(new QCPAxisTickerLog);
+    xtick->setLogBase(1.05);
+    plot->xAxis->setNumberPrecision(0);
+    plot->xAxis->setTicker(xtick);
+    plot->xAxis->setRange(0, xodd[xodd.size()-1]);
+    plot->yAxis->setRange(0, std::max(yeven[yeven.size()-1],yodd[yodd.size()-1]));
+
+    plot->rescaleAxes();
+    plot->replot();
+}
 static QColor getMyColor(int nres)
 {
     switch(nres)
@@ -415,6 +482,13 @@ void MainWindow::paintRPT2(const QString & filename)
 void MainWindow::paintGraph(const QString& filename)
 {
     plot->clearPlottables();
+    if (filename.mid(filename.size()-4) == ".eee" ||
+	filename.mid(filename.size()-4) == ".sss" )
+    {
+	paintES(filename);
+	return;
+    }
+
     if (filename.mid(filename.size()-4) == ".chi")
     {
 	paintChi(filename);

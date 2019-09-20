@@ -41,6 +41,9 @@ private:
     bool loadPrepared(std::vector<PreparedResult> & results,const QString &filename);
     bool loadChi(const QString & filename, QVector<double> & x, QVector<double> & yorig, QVector<double> & ycut);
 
+    bool loadES(const QString & filename, QVector<double> & xeven, QVector<double> & yeven, QVector<double> & xodd,QVector<double> & yodd);
+    void paintES(const QString & filename);
+
     Ui::MainWindow *ui;
     QCustomPlot* plot;
     double dEpsilon;
