@@ -10,6 +10,8 @@
 #include <utility>
 #include"result.h"
 
+#define UNUSED(x) ((void)(x))
+
 struct RPT2Entry
 {
     double temp;

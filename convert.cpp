@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <random>
 
 #include <qmath.h>
 #include <assert.h>
@@ -335,8 +336,25 @@ struct edata
     };
 };
 
+template <class URNG> double distort(URNG & re,double mid, double randDelta)
+{
+#if USE_UNIFORM
+    std::uniform_real_distribution<double> unif((1-randDelta)*mid,(1+randDelta)*mid);
+    return unif(re);
+#elif USE_GAUSS
+    std::normal_distribution<double> gauss(mid,randDelta*mid);
+    return gauss(re);
+#else
+    UNUSED(re);
+    UNUSED(randDelta);
+    return mid;
+#endif
+}
+
 void FixEE(std::vector<edata> & data)
 {
+    constexpr double bigDelta = 10;
+    constexpr double randDelta = 0.1;
     std::vector<edata> rdata;
     bool modified=false;
     size_t nres = 0;
@@ -403,6 +421,15 @@ void FixEE(std::vector<edata> & data)
     for (auto & x: data)
 	if (x.e == BAD_E)
 	    x.e = k*log(x.cnum+max_cnum)+b; 
+   std::default_random_engine re;
+   size_t last = data.size() - 1;
+   for (size_t i = 1; i < last ;i++)
+	if ( fabs(data[i].e-data[i-1].e) > bigDelta )
+	    data[i].e = distort(re,(data[i-1].e+data[i+1].e)/2,randDelta);
+
+   if (fabs(data[last].e-data[last-1].e) > bigDelta)
+	data[last].e = distort(re, data[last-2].e+(data[last-1].e-data[last-2].e)/(data[last-1].cnum-data[last-2].cnum)*(data[last].cnum-data[last-2].cnum), randDelta);
+
 }
 
 void saveEE(const std::string & FileName, const std::vector<PreparedResult>& results)

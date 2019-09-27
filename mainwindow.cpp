@@ -285,6 +285,17 @@ bool MainWindow::loadES(const QString & filename, QVector<double> & xeven, QVect
     return true;
 }
 
+double min(const QVector<double> & v)
+{
+    return *std::min_element(v.begin(),v.end());
+}
+
+double max(const QVector<double> & v)
+{
+    return *std::max_element(v.begin(),v.end());
+}
+
+
 void MainWindow::paintES(const QString & filename)
 {
     QVector<double> yeven,yodd,xeven,xodd; 
@@ -299,15 +310,23 @@ void MainWindow::paintES(const QString & filename)
     graph2->setName("Odd");
     graph2->setPen(QPen(Qt::red));
     plot->xAxis->setLabel("n [-]");
-    plot->yAxis->setLabel("BBAABABBABABA");
+    if (filename.mid(filename.size()-4) == ".eee")
+	plot->yAxis->setLabel("E [GPa]");
+    else
+	plot->yAxis->setLabel("Sigma [GPa]");
+    plot->yAxis->setScaleType(QCPAxis::stLinear);
     plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
     QSharedPointer<QCPAxisTickerLog> xtick(new QCPAxisTickerLog);
+    QSharedPointer<QCPAxisTickerFixed> ytick(new QCPAxisTickerFixed());
+    double mine = std::min(min(yodd),min(yeven));
+    double maxe = std::max(max(yodd),max(yeven));
+    ytick->setTickStep(pow(10,floor(log10(maxe-mine)-0.5)));
     xtick->setLogBase(1.05);
     plot->xAxis->setNumberPrecision(0);
     plot->xAxis->setTicker(xtick);
+    plot->yAxis->setTicker(ytick);
     plot->xAxis->setRange(0, xodd[xodd.size()-1]);
-    plot->yAxis->setRange(0, std::max(yeven[yeven.size()-1],yodd[yodd.size()-1]));
-
+    plot->yAxis->setRange(0, maxe);
     plot->rescaleAxes();
     plot->replot();
 }
