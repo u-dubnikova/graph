@@ -380,17 +380,10 @@ void FixEE(std::vector<edata> & data)
 		emax = x.e;
 	    double lc=log(x.cnum+max_cnum);
 	    nres++;
-#if 0
-	    sumc+=x.cnum;
-	    sumcsq+=((double)x.cnum)*x.cnum;
-	    sume+=x.e;
-	    sumce+=x.cnum*x.e;
-#else
 	    sumc+=lc;
 	    sumcsq+=lc*lc;
 	    sume+=x.e;
 	    sumce+=lc*x.e;
-#endif
 	}
 	sumc/=nres;
 	sumcsq/=nres;
@@ -415,7 +408,6 @@ void FixEE(std::vector<edata> & data)
 	    }
 	    
 	}
-//	printf("k=%lf\n,b=%lf\n",k,b);
     } 
     while (modified);
 
@@ -616,17 +608,12 @@ void SaveCutResults(
 	double s0 = it[-1].sigma;
 	if (dir == 1)
 	    dst.push_back(*it++);
-#if 0
-	while (it!=src.end() && dir*it->sigma > dir*(s0+E2*(it->epsilon-e0-dir*delta)) && it->cycle == cur_cycle)
-	    it++;
-#else
 	auto it2=it;
 	while (it+1!=src.end() && it[1].cycle == cur_cycle)
 	    it++;
 	while (it != it2 && dir*it->sigma <= dir*(s0+E2*(it->epsilon-e0-dir*delta)))
 	    it--;
 	it++;
-#endif
 	double sc = fabs(it->sigma-dst[dst.size()-1].sigma);
 	fs << it->cycle<<"\t"<<sc<<"\t"<<sc-sp<<"\n";
 	sp = sc;
@@ -635,32 +622,11 @@ void SaveCutResults(
 	dir=-dir;
     }
     printResults(FileName+".acv",dst);
-
-    int nc=0;
-    size_t itd=dst.size()-1;
-    int cc = dst[itd].cycle;
-    for (;itd!=0 && nc<2;itd--)
-	if (dst[itd].cycle !=cc)
-	{
-	    cc = dst[itd].cycle;
-	    nc++;
-	}
-    printResults(FileName+".acc",std::vector<Result>(dst.begin()+itd+2,dst.end()));
 }
 
 double intersect(const PreparedResult& r1, const PreparedResult & r2)
 {
-//    std::cout<<r1.sigma<<'\t'<<r2.sigma<<'\n';
     double res=(r2.sigma*r1.epsilon-r1.sigma*r2.epsilon)/(r2.sigma-r1.sigma);
-#if 0
-    if (fabs(res)>0.05)
-    {
-	std::cout<<"c1="<<r1.cycle<<",c2="<<r2.cycle;
-	std::cout<<",e1="<<r1.epsilon<<",e2="<<r2.epsilon;
-	std::cout<<",s1="<<r1.sigma<<",s2="<<r2.sigma;
-	std::cout<<",res="<<res<<'\n';
-    }
-#endif
     return res;
 }
 double av(double i, double nstart, double nfinish, double xstart, double xfinish)
@@ -765,16 +731,6 @@ chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& ori
 //    for (const auto& res : Chis)
     for (const auto& res : ChiNew)
         ofs << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
-
-    std::ofstream ofsdelta(FileName+".delta");
-    if (!ofsdelta)
-    {
-	std::cout<<"Cannot open "<<FileName<<std::endl;
-        return ChiNew[ChiNew.size()-1];
-    }
-
-    for (const auto& res : ChiDelta)
-        ofsdelta << res.cycle <<'\t' <<res.chi_orig*100 <<'\t' <<res.chi_cut*100 << '\n';
 
     return ChiNew[ChiNew.size()-1];
 }

@@ -44,7 +44,8 @@ void MainWindow::openTriggered()
 {
     auto fileName = QFileDialog::getOpenFileName(this,
                                                  "Open file with results", "",
-                                                 "ALV (*.alv);;Cut ALV(*.acv);;Last cycle(*.acc);;Chi (*.chi);;Reports (*.rpt);;Chi reports (*.rpt2);;E (*.eee);;Sigma (*.sss);;All Files (*)");
+                                                 "ALV (*.alv);;Cut ALV(*.acv);;Chi (*.chi);;Reports (*.rpt);;Chi reports (*.rpt2);;E (*.eee);;Sigma (*.sss);;All Files (*)");
+
     if (fileName.isEmpty())
            return;
 
