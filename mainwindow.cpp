@@ -705,7 +705,6 @@ void MainWindow::setTemperature() {
         // Была нажата кнопка Cancel
         return;
     }
-    std::cout<<"Set Temperature:"<<temp<<std::endl;
     QFileDialog dialog(this);
     QStringList fileNames = QFileDialog::getOpenFileNames(this,
                                                                            "Open file", "",

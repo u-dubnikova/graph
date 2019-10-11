@@ -363,8 +363,10 @@ void FixEE(std::vector<edata> & data)
 
     do
     {
+#ifdef DBG_PRINT
 	for (const auto & x: data)
 	    printf("%d\t%lf\n",x.cnum,x.e);
+#endif
         double sumc=0,sumcsq=0,sume=0,sumce=0;
 	modified = false;
 	double emin = data[0].e, emax=data[0].e;
@@ -396,9 +398,11 @@ void FixEE(std::vector<edata> & data)
 	sumce/=nres;
 	k=(sumce-sumc*sume)/(sumcsq-sumc*sumc);
 	b=sume-k*sumc;
+#ifdef DBG_PRINT
 	printf("emin=%lf, emax=%lf\n",emin, emax);
 	printf("k=%lf,b=%lf\n",k,b);
 	printf("E[1]=%lf,E[last]=%lf\n",data[1].e,data[data.size()-1].e);
+#endif
 	for (size_t i = 1;i<data.size();i++)
 	{
 	    if (data[i].e == BAD_E)
@@ -415,8 +419,10 @@ void FixEE(std::vector<edata> & data)
     } 
     while (modified);
 
+#ifdef DBG_PRINT
     for (const auto & x: data)
 	printf("%d\t%lf\n",x.cnum,x.e);
+#endif
 
     for (auto & x: data)
 	if (x.e == BAD_E)
@@ -435,7 +441,6 @@ void FixEE(std::vector<edata> & data)
 void saveEE(const std::string & FileName, const std::vector<PreparedResult>& results)
 {
     std::ofstream f(FileName+".eee");
-    std::ofstream fs(FileName+".sss");
     size_t idx=0;
     double eprev=0;
     std::vector<edata> ES;
@@ -455,7 +460,6 @@ void saveEE(const std::string & FileName, const std::vector<PreparedResult>& res
     {
 	double EN=ES[idx].e;
 	f<<ES[idx].cnum<<"\t"<<EN<<"\t"<<EN-eprev<<std::endl;
-	fs<<ES[idx].cnum<<"\t"<<ES[idx].sigma<<std::endl;
 	eprev = EN;
     }
 }
@@ -463,7 +467,9 @@ void saveEE(const std::string & FileName, const std::vector<PreparedResult>& res
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1, bool & approx_good)
 {
    E_0=get_E0(results).first;
+#ifdef DBG_PRINT
    std::cout<<"E_0="<<E_0<<std::endl;
+#endif
     if ( E_0 == BAD_E || E_0 < 40. )
 	return false;
     size_t i_s;
@@ -473,7 +479,9 @@ bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,ep
     if (i_s>=results.size() || results[i_s].cycle != 0)
 	return false;
     epsig_1 = get_epsigma(results[i_s-1],results[i_s],E_0,dEps);
+#ifdef DBG_PRINT
     std::cout<<"Sigma_1="<<epsig_1.second<<std::endl;
+#endif
     if (epsig_1.second < 0.1)
 	return false;
 /* 
@@ -599,6 +607,8 @@ void SaveCutResults(
 	    return;
     }
     int dir=-1;
+    std::ofstream fs(FileName+".sss");
+    double sp=0;
     while (it!=src.end())
     {
 	int cur_cycle=it->cycle;
@@ -617,11 +627,15 @@ void SaveCutResults(
 	    it--;
 	it++;
 #endif
+	double sc = fabs(it->sigma-dst[dst.size()-1].sigma);
+	fs << it->cycle<<"\t"<<sc<<"\t"<<sc-sp<<"\n";
+	sp = sc;
 	while (it!=src.end() && it->cycle == cur_cycle)
 	    dst.push_back(*it++);
 	dir=-dir;
     }
     printResults(FileName+".acv",dst);
+
     int nc=0;
     size_t itd=dst.size()-1;
     int cc = dst[itd].cycle;
