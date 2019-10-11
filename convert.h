@@ -70,7 +70,10 @@ public:
 	}
 	for (int l=0;l<=20;l++)
 	    if (derive(l/20.).y < 0)
+	    {
 	 	tch1=l/20.;
+		break;
+	    }
 	tch=tch1;	
 	for (int l=0;l<20;l++)
 	    if (derive(tch1-l/400).y <= 0)
