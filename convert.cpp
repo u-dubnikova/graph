@@ -236,13 +236,16 @@ static epsig get_epsigma(const PreparedResult & p0, const PreparedResult &p1, do
     return epsig(ret_eps,ret_sigma);
 }
 
-esig get_E0(std::vector<PreparedResult> & results)
+bool get_E0(std::vector<PreparedResult> & results, esig & ret)
 {
     double s1,s2;    
     double s,sp,d,dp,sig_0,eps_0;
     size_t i=0,i0;
     if (results.size() == 0)
-	return esig(BAD_E,BAD_E);
+    {
+	ret = esig(BAD_E,BAD_E);
+	return false;
+    }
     while (results[i].epsilon == 0) 
 	i++;
     s1=results[i].sigma*results[i].epsilon;
@@ -250,15 +253,17 @@ esig get_E0(std::vector<PreparedResult> & results)
     s=s1/s2;
     sp=s;
     i0=i;
-    for (i++;i<results.size() && results[i].cycle == 0 && results[i].epsilon == results[0].epsilon;i++) ;
+    for (i++;i<results.size() && results[i].cycle == 0 && results[i].epsilon == results[i0].epsilon;i++) ;
     if ( i>= results.size() || results[i].cycle != 0 )
     {
 	printf("HOLY SHIT\n");
-	return esig(BAD_E,BAD_E);
+	ret =  esig(BAD_E,BAD_E);
+	return false;
     }
     s1+=results[i].sigma*results[i].epsilon;
     s2+=results[i].epsilon*results[i].epsilon;
     s=s1/s2;
+#if 0
     d=(s-sp)/(results[i].epsilon-results[i0].epsilon);
     //printf("dp=%lf,s=%lf,sp=%lf,eps=%lf,epsp=%lf\n",d,s,sp,results[i].epsilon,results[0].epsilon);
     for (i++;i<results.size() && results[i].cycle == 0;i++)
@@ -284,15 +289,33 @@ esig get_E0(std::vector<PreparedResult> & results)
 		    printf("d=%lf,dp=%lf,eps=%lf,epsp=%lf\n",d,dp,eps,epsp);
 		    printf("sig_0=%lf,eps0=%lf,res=%lf\n",sig_0,eps_0,res);
 	    }
-	    return esig(res,sig_0);
+	    ret = esig(res,sig_0);
+	    return true;
 	}
     }
-    return esig(results[i-1].sigma/results[i-1].epsilon,results[i-1].sigma);
+#else
+    constexpr double dmin = 1e-3;
+    for (i++;i<results.size() && results[i].cycle == 0;i++)
+    {
+	s1+=results[i].sigma*results[i].epsilon;
+	s2+=results[i].epsilon*results[i].epsilon;
+	double snew=s1/s2;
+	if (fabs((snew-s)/s) < dmin)
+	{
+	    ret = esig(snew,results[i].epsilon);
+	    return true;
+	}
+	s = snew;
+    }
+
+#endif
+    ret = esig(results[i-1].sigma/results[i-1].epsilon,results[i-1].sigma);
+    return false;
+
 }
 
-PreparedResult transform_res(const PreparedResult & x, const PreparedResult & x0, size_t cnum)
+PreparedResult transform_res(const PreparedResult & x, const PreparedResult & x0, double sgn)
 {
-    double sgn = (cnum%2)?-1:1;
     return PreparedResult(0,sgn*(x.sigma-x0.sigma),sgn*(x.epsilon-x0.epsilon));
 }
 
@@ -300,6 +323,7 @@ esig get_EN(const std::vector<PreparedResult> & results, size_t & idx)
 {
     int cnum = results[idx].cycle;
     std::vector<PreparedResult> v2;
+    size_t idx00 = idx;
     if (cnum != 0)
     {
 	size_t idx_end;
@@ -312,10 +336,26 @@ esig get_EN(const std::vector<PreparedResult> & results, size_t & idx)
 	idx = idx_end+1;
     }
     const PreparedResult & x0 = results[idx];
+    size_t idx0 = idx;
 
+    double sgn = (cnum%2)?-1:1;
     for (idx++;idx < results.size() && results[idx].cycle == cnum;idx++)
-	v2.push_back(transform_res(results[idx],x0,cnum));
-    esig es=get_E0(v2);
+	v2.push_back(transform_res(results[idx],x0,sgn));
+    esig es;
+    if (!get_E0(v2,es) && idx0)
+    {
+	v2.clear();
+	for (size_t idx2=idx0-1;idx2 > idx00;idx2--)
+	    v2.push_back(transform_res(results[idx2],x0,-sgn));
+	esig es2;
+	if (!get_E0(v2,es2))
+	{
+//	    std::cout<<"Failed in both directions, cnum="<<cnum<<"\n";
+	    es = esig(BAD_E,es2.second);
+	}
+	else
+	    es = es2;
+    }
     if (es.first < 0)
     {
 	printf("res=%lf",es.first);
@@ -458,7 +498,9 @@ void saveEE(const std::string & FileName, const std::vector<PreparedResult>& res
 
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1, bool & approx_good)
 {
-   E_0=get_E0(results).first;
+   esig es;
+   get_E0(results,es);
+   E_0=es.first;
 #ifdef DBG_PRINT
    std::cout<<"E_0="<<E_0<<std::endl;
 #endif
