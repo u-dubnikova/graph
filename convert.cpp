@@ -335,7 +335,7 @@ esig get_EN(const std::vector<PreparedResult> & results, size_t & idx)
 		break;
 	idx = idx_end+1;
     }
-    const PreparedResult & x0 = results[idx];
+    const PreparedResult & x0 = (cnum == 0 )?PreparedResult():results[idx];
     size_t idx0 = idx;
 
     double sgn = (cnum%2)?-1:1;
@@ -436,7 +436,7 @@ void FixEE(std::vector<edata> & data)
 	printf("k=%lf,b=%lf\n",k,b);
 	printf("E[1]=%lf,E[last]=%lf\n",data[1].e,data[data.size()-1].e);
 #endif
-	for (size_t i = 1;i<data.size();i++)
+	for (size_t i = 0;i<data.size();i++)
 	{
 	    if (data[i].e == BAD_E)
 		continue;
