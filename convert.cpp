@@ -260,10 +260,10 @@ bool get_E0(std::vector<PreparedResult> & results, esig & ret)
 	ret =  esig(BAD_E,BAD_E);
 	return false;
     }
+#if 0
     s1+=results[i].sigma*results[i].epsilon;
     s2+=results[i].epsilon*results[i].epsilon;
     s=s1/s2;
-#if 0
     d=(s-sp)/(results[i].epsilon-results[i0].epsilon);
     //printf("dp=%lf,s=%lf,sp=%lf,eps=%lf,epsp=%lf\n",d,s,sp,results[i].epsilon,results[0].epsilon);
     for (i++;i<results.size() && results[i].cycle == 0;i++)
@@ -294,19 +294,28 @@ bool get_E0(std::vector<PreparedResult> & results, esig & ret)
 	}
     }
 #else
-    constexpr double dmin = 1e-3;
-    for (i++;i<results.size() && results[i].cycle == 0;i++)
+    double dmin = 1e-3;
+    auto save_i=i;
+    while (dmin < 1)
     {
-	s1+=results[i].sigma*results[i].epsilon;
-	s2+=results[i].epsilon*results[i].epsilon;
-	double snew=s1/s2;
-	if (fabs((snew-s)/s) < dmin)
+	s1=s2=0;
+	s1+=results[save_i].sigma*results[save_i].epsilon;
+	s2+=results[save_i].epsilon*results[save_i].epsilon;
+	s=s1/s2;
+	for (i=save_i+1;i<results.size() && results[i].cycle == 0;i++)
 	{
-	    ret = esig(snew,results[i].epsilon);
-	    return true;
+	    s1+=results[i].sigma*results[i].epsilon;
+	    s2+=results[i].epsilon*results[i].epsilon;
+	    double snew=s1/s2;
+	    if (fabs((snew-s)/s) < dmin)
+	    {
+		ret = esig(snew,results[i].epsilon);
+		return true;
+	    }
+	    s = snew;
 	}
-	s = snew;
-    }
+	dmin*=10;
+    } 
 
 #endif
     ret = esig(results[i-1].sigma/results[i-1].epsilon,results[i-1].sigma);
