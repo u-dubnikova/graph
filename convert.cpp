@@ -331,7 +331,7 @@ PreparedResult transform_res(const PreparedResult & x, const PreparedResult & x0
 esig get_EN(const std::vector<PreparedResult> & results, size_t & idx)
 {
     int cnum = results[idx].cycle;
-    std::vector<PreparedResult> v2;
+    std::vector<PreparedResult> v2,v3;
     size_t idx00 = idx;
     if (cnum != 0)
     {
@@ -350,12 +350,17 @@ esig get_EN(const std::vector<PreparedResult> & results, size_t & idx)
     double sgn = (cnum%2)?-1:1;
     for (idx++;idx < results.size() && results[idx].cycle == cnum;idx++)
 	v2.push_back(transform_res(results[idx],x0,sgn));
-    esig es;
-    if (!get_E0(v2,es) && idx0)
-    {
-	v2.clear();
+    if ( idx0 != 0)
 	for (size_t idx2=idx0-1;idx2 > idx00;idx2--)
-	    v2.push_back(transform_res(results[idx2],x0,-sgn));
+	    v3.push_back(transform_res(results[idx2],x0,-sgn));
+    esig es;
+    if (idx0 == 0)
+    {
+	if (!get_E0(v2,es))
+	    es = esig(BAD_E,es.second);
+    }
+    else if (!get_E0(v3,es))
+    {
 	esig es2;
 	if (!get_E0(v2,es2))
 	{
