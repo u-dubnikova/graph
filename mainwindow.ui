@@ -48,6 +48,7 @@
     <addaction name="actionOpen"/>
     <addaction name="actionConvert"/>
     <addaction name="actionSave"/>
+    <addaction name="actionStretch"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -100,6 +101,11 @@
   <action name="action_mincycle">
    <property name="text">
     <string>&amp;Минимальная длина полуцикла</string>
+   </property>
+  </action>
+  <action name="actionStretch">
+   <property name="text">
+    <string>&quot;Выпрямить&quot; данные</string>
    </property>
   </action>
  </widget>

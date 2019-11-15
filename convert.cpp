@@ -238,8 +238,7 @@ static epsig get_epsigma(const PreparedResult & p0, const PreparedResult &p1, do
 
 bool get_E0(std::vector<PreparedResult> & results, esig & ret)
 {
-    double s1,s2;    
-    double s,sp,d,dp,sig_0,eps_0;
+    double s1,s2,s;    
     size_t i=0,i0;
     if (results.size() == 0)
     {
@@ -251,7 +250,6 @@ bool get_E0(std::vector<PreparedResult> & results, esig & ret)
     s1=results[i].sigma*results[i].epsilon;
     s2=results[i].epsilon*results[i].epsilon;
     s=s1/s2;
-    sp=s;
     i0=i;
     for (i++;i<results.size() && results[i].cycle == 0 && results[i].epsilon == results[i0].epsilon;i++) ;
     if ( i>= results.size() || results[i].cycle != 0 )
@@ -260,40 +258,6 @@ bool get_E0(std::vector<PreparedResult> & results, esig & ret)
 	ret =  esig(BAD_E,BAD_E);
 	return false;
     }
-#if 0
-    s1+=results[i].sigma*results[i].epsilon;
-    s2+=results[i].epsilon*results[i].epsilon;
-    s=s1/s2;
-    d=(s-sp)/(results[i].epsilon-results[i0].epsilon);
-    //printf("dp=%lf,s=%lf,sp=%lf,eps=%lf,epsp=%lf\n",d,s,sp,results[i].epsilon,results[0].epsilon);
-    for (i++;i<results.size() && results[i].cycle == 0;i++)
-    {
-	double eps=results[i].epsilon, epsp=results[i-1].epsilon;
-	sp=s;
-	dp=d;
-	s1+=results[i].sigma*eps;
-	s2+=eps*eps;
-	if (eps == epsp)
-	    continue;
-	s=s1/s2;
-	d=(s-sp)/(eps-epsp);
-	if (d<0)
-	{
-	    eps_0=(epsp*d-eps*dp)/(d-dp);
-
-	    sig_0=results[i-1].sigma+(results[i].sigma-results[i-1].sigma)/(eps-epsp)*(eps_0-epsp);
-	    double res=sig_0/eps_0;
-	    if (res< 0)
-	    {
-		    printf("sig=%lf,sigp=%lf\n",results[i].sigma,results[i-1].sigma);
-		    printf("d=%lf,dp=%lf,eps=%lf,epsp=%lf\n",d,dp,eps,epsp);
-		    printf("sig_0=%lf,eps0=%lf,res=%lf\n",sig_0,eps_0,res);
-	    }
-	    ret = esig(res,sig_0);
-	    return true;
-	}
-    }
-#else
     double dmin = 1e-3;
     auto save_i=i;
     while (dmin < 1)
@@ -317,7 +281,6 @@ bool get_E0(std::vector<PreparedResult> & results, esig & ret)
 	dmin*=10;
     } 
 
-#endif
     ret = esig(results[i-1].sigma/results[i-1].epsilon,results[i-1].sigma);
     return false;
 
@@ -630,6 +593,57 @@ void convertFile(const std::string& inputFileName, const std::string& outputFile
     removeDuplicates(results);
     if (!printResults(outputFileName, results))
         throw std::runtime_error("can't print results");
+}
+
+bool stretchFile(const std::string& inputFileName, const std::string& outputFileName)
+{
+    std::vector<PreparedResult> results,new_results;
+    results.clear();
+    std::ifstream ifs(inputFileName);
+    if (!ifs)
+        return false;
+
+    PreparedResult result;
+    while (ifs >> result.cycle >> result.sigma >> result.epsilon)
+        results.emplace_back(result);
+    size_t idx = 0;
+    do
+    {
+	size_t idx0=idx;
+	int cur_cycle = results[idx0].cycle;
+	std::vector<double> epss,sigs;
+	while (idx < results.size() && results[idx].cycle == cur_cycle)
+	{
+	    epss.emplace_back(results[idx].epsilon);
+	    sigs.emplace_back(results[idx].sigma);
+	    idx++;
+	}
+	if (cur_cycle%2)
+	{
+	    std::sort(epss.begin(),epss.end(),std::greater<double>());
+	    std::sort(sigs.begin(),sigs.end(),std::greater<double>());
+	}
+	else
+	{
+	    std::sort(epss.begin(),epss.end());
+	    std::sort(sigs.begin(),sigs.end());
+	}
+	for (size_t i = 0;i < epss.size();i++)
+	    new_results.emplace_back(PreparedResult(cur_cycle,sigs[i],epss[i]));
+    }
+    while (idx<results.size());
+    std::ofstream ofs(outputFileName);
+    if (!ofs)
+        return false;
+    ofs<< std::scientific << std::uppercase;
+    for (const auto & r: new_results)
+	ofs << r.cycle <<"\t" <<r.sigma<<"\t"<<r.epsilon <<std::endl;
+    return true;
+
+
+
+    return true;
+
 }
 
 void SaveCutResults(

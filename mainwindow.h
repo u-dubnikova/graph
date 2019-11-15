@@ -31,6 +31,7 @@ private slots:
     void setDelta();
     void setMinlen();
     void doClear();
+    void doStretch();
 
 private:
     void paintGraph(std::vector<PreparedResult> & data, const QString& name, QColor color);

@@ -26,6 +26,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionOpen, SIGNAL(triggered()), this, SLOT(openTriggered()));
     connect(ui->actionConvert, SIGNAL(triggered()), this, SLOT(convertTriggered()));
     connect(ui->actionSave, SIGNAL(triggered()), this, SLOT(saveTriggered()));
+    connect(ui->actionStretch, SIGNAL(triggered()), this, SLOT(doStretch()));
+
     connect(ui->action_temp, SIGNAL(triggered()), this, SLOT(setTemperature()));
     connect(ui->action_report, SIGNAL(triggered()), this, SLOT(saveReport()));
     connect(ui->action_delta, SIGNAL(triggered()), this, SLOT(setDelta()));
@@ -666,6 +668,40 @@ void MainWindow::convertTriggered()
            }
 
     }
+}
+
+void MainWindow::doStretch()
+{
+    QStringList inputFileNames = QFileDialog::getOpenFileNames(this,
+                                                        "Open file", "",
+                                                        "ALV (*.alv);;All Files (*)");
+    if (inputFileNames.isEmpty())
+           return;
+    if (inputFileNames.size() == 1)
+    {
+        QString new_name=  inputFileNames[0];
+
+        auto outputFileName = QFileDialog::getSaveFileName(this,
+                                                           "Save results", new_name,
+                                                           "ALV (*.alv);;All Files (*)");
+        if (outputFileName.isEmpty())
+               return;
+        QFileInfo info(outputFileName);
+        if (info.suffix().isEmpty())
+            outputFileName += ".alv";
+        try
+        {
+            stretchFile(inputFileNames[0].toStdString(), outputFileName.toStdString());
+        }
+        catch (std::runtime_error& e)
+        {
+            QMessageBox::information(this, "Error",
+                QString("Unable to convert files: ") + e.what());
+            return;
+        }
+        paintGraph(outputFileName);
+    }
+ 
 }
 
 void MainWindow::saveTriggered()

@@ -38,6 +38,7 @@ using epsig = std::pair<double,double>;
 using esig = std::pair<double,double>;
 
 void convertFile(const std::string& inputFileName, const std::string& outputFileName, unsigned minlen);
+bool stretchFile(const std::string& inputFileName, const std::string& outputFileName);
 bool findElas(std::vector<PreparedResult> & results, double dEps,double & E_0,epsig & epsig_1,bool & approx_good);
 double findSigma2(std::vector<PreparedResult> & results, double dEps, double E);
 chi saveChi(const std::string & FileName, const std::vector<PreparedResult>& orig,const std::vector<PreparedResult> & cut, double E);
