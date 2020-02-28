@@ -580,6 +580,13 @@ void removeDuplicates(Results & results)
     results = new_res;
 }
 
+void fixZeroCycle(Results & results)
+{
+    for (size_t i=1;i<results.size()-1;i++)
+	if (results[i].cycle != 0 && results[i-1].cycle == 0 && results[i+1].cycle == 0)
+	    results[i].cycle = 0;
+}
+
 
 void convertFile(const std::string& inputFileName, const std::string& outputFileName, unsigned minlen)
 {
@@ -587,6 +594,7 @@ void convertFile(const std::string& inputFileName, const std::string& outputFile
     if (!readResults(inputFileName, results))
         throw std::runtime_error("can't read results");
 
+    fixZeroCycle(results);
     cutByCycle(results);
     cutNearZero(results);
     transformResults(results);
