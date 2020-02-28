@@ -65,7 +65,10 @@ bool readResults(const std::string& filename, Results& results)
     Result result;
     skipLine(ifs);
     while (ifs >> result)
+    {
         results.emplace_back(result);
+	skipLine(ifs);
+    }
 
     return true;
 }
